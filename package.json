@@ -13,7 +13,8 @@
     "express": "^5.1.0",
     "express-graphql": "^0.12.0",
     "graphql": "^15.10.1",
-    "mongoose": "^8.19.4"
+    "mongoose": "^8.19.4",
+    "razorpay": "^2.9.6"
   },
   "devDependencies": {
     "@types/dotenv": "^8.2.0",

@@ -1,7 +1,7 @@
 import { buildSchema } from 'graphql';
 import {UserModel} from '../schema/user';
 
-export const schema=buildSchema(`
+export const user_Schema=buildSchema(`
 
     enum Role{
         admin
@@ -46,7 +46,7 @@ export interface UserInput {
     role: 'admin' | 'volunteer';
 };
 
-export const root={
+export const User={
     user:async({id}:{id:string})=>{
         const data=await UserModel.findById(id).lean();
         return data;
@@ -57,7 +57,7 @@ export const root={
         return saved;
     },
     deleteUser: async ({ id }: { id: string }) => {
-    const res = await UserModel.findByIdAndDelete(id);
-    return !!res;
+        const res = await UserModel.findByIdAndDelete(id);
+        return !!res;
     },
 };
