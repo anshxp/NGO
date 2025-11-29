@@ -1,0 +1,206 @@
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.donateResolvers = void 0;
+const donate_1 = require("../../schema/donate");
+const user_1 = require("../../schema/user");
+const email_1 = require("../../utils/email");
+const razorpay_1 = __importDefault(require("razorpay"));
+const crypto_1 = __importDefault(require("crypto"));
+const pdf_1 = require("../../utils/pdf");
+const razorpay = new razorpay_1.default({
+    key_id: process.env.RAZORPAY_KEY_ID || 'test_key',
+    key_secret: process.env.RAZORPAY_KEY_SECRET || 'test_secret'
+});
+exports.donateResolvers = {
+    Query: {
+        getDonations: async (_, { limit = 10, offset = 0 }) => {
+            return await donate_1.DonateModel.find().limit(limit).skip(offset).populate('referredBy');
+        },
+        getDonation: async (_, { id }) => {
+            return await donate_1.DonateModel.findById(id).populate('referredBy');
+        },
+        getDonationsByStatus: async (_, { status }) => {
+            return await donate_1.DonateModel.find({ payment_status: status }).populate('referredBy');
+        },
+        getDonationStats: async () => {
+            const allDonations = await donate_1.DonateModel.find();
+            const successfulDonations = allDonations.filter(d => d.payment_status === 'SUCCESS');
+            const failedDonations = allDonations.filter(d => d.payment_status === 'FAILED');
+            const pendingDonations = allDonations.filter(d => d.payment_status === 'PENDING');
+            const totalAmount = successfulDonations.reduce((sum, d) => sum + d.amount, 0);
+            const pendingAmount = pendingDonations.reduce((sum, d) => sum + d.amount, 0);
+            return {
+                totalDonations: allDonations.length,
+                totalAmount,
+                pendingAmount,
+                successfulDonations: successfulDonations.length,
+                failedDonations: failedDonations.length
+            };
+        },
+        getUserDonations: async (_, { userId }) => {
+            return await donate_1.DonateModel.find({ referredBy: userId });
+        }
+    },
+    Mutation: {
+        createDonation: async (_, { input }) => {
+            const { donator, donatorEmail, contact, address, amount, payment_method, donation_type, isAnonymous, referralCode } = input;
+            // Find referrer if referral code provided
+            let referrer = null;
+            if (referralCode) {
+                referrer = await user_1.UserModel.findOne({ referralCode });
+            }
+            // Generate transaction ID
+            const transactionId = `TXN${Date.now()}${Math.random().toString(36).substring(2, 9).toUpperCase()}`;
+            const donation = new donate_1.DonateModel({
+                donator,
+                donatorEmail,
+                contact,
+                address,
+                transactionId,
+                amount,
+                payment_method,
+                donation_type,
+                isAnonymous: isAnonymous || false,
+                referredBy: referrer?._id,
+                payment_status: 'PENDING'
+            });
+            await donation.save();
+            // Send donation receipt email
+            try {
+                await (0, email_1.sendDonationReceipt)(donation);
+            }
+            catch (emailError) {
+                console.error('Failed to send donation receipt:', emailError);
+            }
+            // Update referrer's donation stats
+            if (referrer) {
+                referrer.totalDonationsReferred += amount;
+                await referrer.save();
+            }
+            // Send receipt email for cash donation
+            try {
+                await (0, email_1.sendDonationReceipt)(donation);
+            }
+            catch (emailError) {
+                console.error('Failed to send cash donation receipt:', emailError);
+            }
+            return donation;
+        },
+        createDonationOrder: async (_, { input }) => {
+            const { donator, donatorEmail, contact, address, amount, payment_method, donation_type, isAnonymous, referralCode } = input;
+            if (payment_method !== 'razorpay') {
+                throw new Error('payment_method must be razorpay for order creation');
+            }
+            let referrer = null;
+            if (referralCode) {
+                referrer = await user_1.UserModel.findOne({ referralCode });
+            }
+            // Create Razorpay order (amount in paise)
+            const order = await razorpay.orders.create({
+                amount: Math.round(amount * 100),
+                currency: 'INR',
+                receipt: `rcpt_${Date.now()}`,
+                notes: {
+                    donator,
+                    donation_type
+                }
+            });
+            const transactionId = `ORD${Date.now()}${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
+            const donation = new donate_1.DonateModel({
+                donator,
+                donatorEmail,
+                contact,
+                address,
+                transactionId,
+                amount,
+                payment_method,
+                donation_type,
+                isAnonymous: isAnonymous || false,
+                referredBy: referrer?._id,
+                payment_status: 'PENDING',
+                orderId: order.id
+            });
+            await donation.save();
+            return donation;
+        },
+        verifyDonationPayment: async (_, { orderId, paymentId, signature }) => {
+            const donation = await donate_1.DonateModel.findOne({ orderId });
+            if (!donation)
+                throw new Error('Donation order not found');
+            // Verify signature
+            const expected = crypto_1.default.createHmac('sha256', process.env.RAZORPAY_KEY_SECRET || 'test_secret')
+                .update(orderId + '|' + paymentId)
+                .digest('hex');
+            if (expected !== signature) {
+                donation.payment_status = 'FAILED';
+                await donation.save();
+                throw new Error('Invalid payment signature');
+            }
+            donation.payment_status = 'SUCCESS';
+            donation.paymentId = paymentId;
+            donation.signature = signature;
+            // Generate PDF receipt
+            try {
+                const pdfPath = await (0, pdf_1.generateDonationPDF)(donation);
+                donation.receiptUrl = pdfPath;
+            }
+            catch (pdfErr) {
+                console.error('PDF generation failed', pdfErr);
+            }
+            await donation.save();
+            // Send email with receipt
+            try {
+                await (0, email_1.sendDonationReceipt)(donation);
+            }
+            catch (e) {
+                console.error('Email send failed after verification', e);
+            }
+            return donation;
+        },
+        updateDonationStatus: async (_, { id, status }, context) => {
+            if (!context.userId || context.user.role !== 'admin') {
+                throw new Error('Unauthorized');
+            }
+            const donation = await donate_1.DonateModel.findById(id);
+            if (!donation) {
+                throw new Error('Donation not found');
+            }
+            donation.payment_status = status;
+            await donation.save();
+            return donation;
+        },
+        createCashDonation: async (_, { input }, context) => {
+            if (!context.userId || context.user.role !== 'admin') {
+                throw new Error('Unauthorized - Admin only');
+            }
+            const { donator, donatorEmail, contact, address, amount, donation_type, isAnonymous, referralCode } = input;
+            let referrer = null;
+            if (referralCode) {
+                referrer = await user_1.UserModel.findOne({ referralCode });
+            }
+            const transactionId = `CASH${Date.now()}${Math.random().toString(36).substring(2, 9).toUpperCase()}`;
+            const donation = new donate_1.DonateModel({
+                donator,
+                donatorEmail,
+                contact,
+                address,
+                transactionId,
+                amount,
+                payment_method: 'cash',
+                donation_type,
+                isAnonymous: isAnonymous || false,
+                referredBy: referrer?._id,
+                payment_status: 'SUCCESS'
+            });
+            await donation.save();
+            if (referrer) {
+                referrer.totalDonationsReferred += amount;
+                await referrer.save();
+            }
+            return donation;
+        }
+    }
+};
