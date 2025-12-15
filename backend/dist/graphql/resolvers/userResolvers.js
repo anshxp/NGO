@@ -14,7 +14,7 @@ exports.userResolvers = {
         getUserByReferralCode: async (_, { referralCode }) => {
             return await user_1.UserModel.findOne({ referralCode });
         },
-        me: async (_, __, context) => {
+        me: async (args, context) => {
             if (!context.userId) {
                 throw new Error('Not authenticated');
             }
@@ -22,7 +22,7 @@ exports.userResolvers = {
         }
     },
     Mutation: {
-        register: async (_, { input }) => {
+        register: async ({ input }, context) => {
             const { name, email, password, phone, designation, dateOfBirth, address, referralCode } = input;
             // Check if user already exists
             const existingUser = await user_1.UserModel.findOne({ email });
@@ -65,7 +65,7 @@ exports.userResolvers = {
                 user
             };
         },
-        login: async (_, { input }) => {
+        login: async ({ input }, context) => {
             const { email, password } = input;
             // Find user
             const user = await user_1.UserModel.findOne({ email });

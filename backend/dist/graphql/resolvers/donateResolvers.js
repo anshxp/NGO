@@ -16,13 +16,13 @@ const razorpay = new razorpay_1.default({
 });
 exports.donateResolvers = {
     Query: {
-        getDonations: async (_, { limit = 10, offset = 0 }) => {
+        getDonations: async ({ limit = 10, offset = 0 }) => {
             return await donate_1.DonateModel.find().limit(limit).skip(offset).populate('referredBy');
         },
-        getDonation: async (_, { id }) => {
+        getDonation: async ({ id }) => {
             return await donate_1.DonateModel.findById(id).populate('referredBy');
         },
-        getDonationsByStatus: async (_, { status }) => {
+        getDonationsByStatus: async ({ status }) => {
             return await donate_1.DonateModel.find({ payment_status: status }).populate('referredBy');
         },
         getDonationStats: async () => {
@@ -40,12 +40,12 @@ exports.donateResolvers = {
                 failedDonations: failedDonations.length
             };
         },
-        getUserDonations: async (_, { userId }) => {
+        getUserDonations: async ({ userId }) => {
             return await donate_1.DonateModel.find({ referredBy: userId });
         }
     },
     Mutation: {
-        createDonation: async (_, { input }) => {
+        createDonation: async ({ input }, context) => {
             const { donator, donatorEmail, contact, address, amount, payment_method, donation_type, isAnonymous, referralCode } = input;
             // Find referrer if referral code provided
             let referrer = null;
@@ -89,7 +89,7 @@ exports.donateResolvers = {
             }
             return donation;
         },
-        createDonationOrder: async (_, { input }) => {
+        createDonationOrder: async ({ input }) => {
             const { donator, donatorEmail, contact, address, amount, payment_method, donation_type, isAnonymous, referralCode } = input;
             if (payment_method !== 'razorpay') {
                 throw new Error('payment_method must be razorpay for order creation');
@@ -126,7 +126,7 @@ exports.donateResolvers = {
             await donation.save();
             return donation;
         },
-        verifyDonationPayment: async (_, { orderId, paymentId, signature }) => {
+        verifyDonationPayment: async ({ orderId, paymentId, signature }) => {
             const donation = await donate_1.DonateModel.findOne({ orderId });
             if (!donation)
                 throw new Error('Donation order not found');
@@ -160,7 +160,7 @@ exports.donateResolvers = {
             }
             return donation;
         },
-        updateDonationStatus: async (_, { id, status }, context) => {
+        updateDonationStatus: async ({ id, status }, context) => {
             if (!context.userId || context.user.role !== 'admin') {
                 throw new Error('Unauthorized');
             }
@@ -172,7 +172,7 @@ exports.donateResolvers = {
             await donation.save();
             return donation;
         },
-        createCashDonation: async (_, { input }, context) => {
+        createCashDonation: async ({ input }, context) => {
             if (!context.userId || context.user.role !== 'admin') {
                 throw new Error('Unauthorized - Admin only');
             }

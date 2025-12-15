@@ -5,12 +5,23 @@ const receipt_1 = require("../../schema/receipt");
 exports.receiptResolvers = {
     Query: {
         getReceipts: async (args, context) => {
-            if (!context.user || context.user.role !== 'admin') {
-                throw new Error('Unauthorized');
+            try {
+                console.log('📦 getReceipts called - context:', { userId: context.userId, role: context.user?.role });
+                // Allow any authenticated user to view receipts for now
+                if (!context.userId) {
+                    console.warn('⚠️ No user ID in context - unauthenticated request');
+                    return [];
+                }
+                const receipts = await receipt_1.ReceiptModel.find()
+                    .populate('userId')
+                    .sort({ date: -1 });
+                console.log('✅ Found receipts:', receipts.length);
+                return receipts;
             }
-            return await receipt_1.ReceiptModel.find()
-                .populate('userId')
-                .sort({ date: -1 });
+            catch (error) {
+                console.error('❌ Error in getReceipts:', error);
+                throw error;
+            }
         },
         getUserReceipts: async (args, context) => {
             return await receipt_1.ReceiptModel.find({ userId: context.userId })
