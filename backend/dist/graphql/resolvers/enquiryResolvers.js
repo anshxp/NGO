@@ -27,8 +27,12 @@ exports.enquiryResolvers = {
     },
     Mutation: {
         submitEnquiry: async (args, context) => {
+            console.log('\n🔵 ===== submitEnquiry CALLED =====');
+            console.log('📝 Arguments received:', JSON.stringify(args, null, 2));
+            console.log('👤 Context user:', context.user ? `${context.user.name} (${context.user.role})` : 'No user');
             try {
                 const { name, email, phone, subject, message } = args;
+                console.log('📦 Destructured values:', { name, email, phone, subject, message });
                 const enquiry = new enquiry_1.EnquiryModel({
                     name,
                     email,
@@ -37,54 +41,71 @@ exports.enquiryResolvers = {
                     message,
                     status: 'new'
                 });
+                console.log('💾 Saving enquiry to database...');
                 const savedEnquiry = await enquiry.save();
+                console.log('✅ Enquiry saved successfully:', savedEnquiry._id);
                 // Auto-response email
-                const autoResponseHTML = `
-                    <!DOCTYPE html>
-                    <html>
-                    <head>
-                        <style>
-                            body { font-family: Arial, sans-serif; }
-                            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-                            .header { background: #2196F3; color: white; padding: 20px; text-align: center; }
-                            .content { background: #f5f5f5; padding: 20px; }
-                        </style>
-                    </head>
-                    <body>
-                        <div class="container">
-                            <div class="header">
-                                <h1>Thank You for Your Enquiry</h1>
+                try {
+                    console.log('📧 Attempting to send auto-response email to:', email);
+                    const autoResponseHTML = `
+                        <!DOCTYPE html>
+                        <html>
+                        <head>
+                            <style>
+                                body { font-family: Arial, sans-serif; }
+                                .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+                                .header { background: #2196F3; color: white; padding: 20px; text-align: center; }
+                                .content { background: #f5f5f5; padding: 20px; }
+                            </style>
+                        </head>
+                        <body>
+                            <div class="container">
+                                <div class="header">
+                                    <h1>Thank You for Your Enquiry</h1>
+                                </div>
+                                <div class="content">
+                                    <p>Dear ${name},</p>
+                                    <p>Thank you for reaching out to us. We have received your enquiry and will respond shortly.</p>
+                                    <p><strong>Enquiry Subject:</strong> ${subject}</p>
+                                    <p>Our team will review your message and get back to you soon.</p>
+                                </div>
                             </div>
-                            <div class="content">
-                                <p>Dear ${name},</p>
-                                <p>Thank you for reaching out to us. We have received your enquiry and will respond shortly.</p>
-                                <p><strong>Enquiry Subject:</strong> ${subject}</p>
-                                <p>Our team will review your message and get back to you soon.</p>
-                            </div>
-                        </div>
-                    </body>
-                    </html>
-                `;
-                // Send auto-response email
-                const nodemailer = require('nodemailer');
-                const transporter = nodemailer.createTransport({
-                    host: process.env.EMAIL_HOST || 'smtp.gmail.com',
-                    port: parseInt(process.env.EMAIL_PORT || '587'),
-                    secure: false,
-                    auth: {
-                        user: process.env.EMAIL_USER,
-                        pass: process.env.EMAIL_PASSWORD
-                    }
-                });
-                await transporter.sendMail({
-                    from: process.env.EMAIL_FROM || 'NGO Management <noreply@ngo.org>',
-                    to: email,
-                    subject: `Enquiry Confirmation - ${subject}`,
-                    html: autoResponseHTML
-                });
-                return { ...savedEnquiry.toObject(), success: true, message: 'Enquiry submitted successfully' };
+                        </body>
+                        </html>
+                    `;
+                    // Send auto-response email
+                    const nodemailer = require('nodemailer');
+                    const transporter = nodemailer.createTransport({
+                        host: process.env.EMAIL_HOST || 'smtp.gmail.com',
+                        port: parseInt(process.env.EMAIL_PORT || '587'),
+                        secure: false,
+                        auth: {
+                            user: process.env.EMAIL_USER,
+                            pass: process.env.EMAIL_PASSWORD
+                        }
+                    });
+                    console.log('🔗 Email config - Host:', process.env.EMAIL_HOST, 'User:', process.env.EMAIL_USER);
+                    await transporter.sendMail({
+                        from: process.env.EMAIL_FROM || 'NGO Management <noreply@ngo.org>',
+                        to: email,
+                        subject: `Enquiry Confirmation - ${subject}`,
+                        html: autoResponseHTML
+                    });
+                    console.log('✅ Email sent successfully');
+                }
+                catch (emailError) {
+                    console.error('⚠️ Email sending error:', emailError.message);
+                }
+                const response = { success: true, message: 'Enquiry submitted successfully' };
+                console.log('✅ Returning response:', response);
+                console.log('🔵 ===== submitEnquiry SUCCESS =====\n');
+                return response;
             }
             catch (error) {
+                console.error('\n❌ ===== submitEnquiry ERROR =====');
+                console.error('💬 Error message:', error.message);
+                console.error('📍 Error stack:', error.stack);
+                console.error('❌ ===== END ERROR =====\n');
                 throw new Error(`Failed to submit enquiry: ${error.message}`);
             }
         },

@@ -13,6 +13,7 @@ const projectResolvers_1 = require("./projectResolvers");
 const eventResolvers_1 = require("./eventResolvers");
 const messageResolvers_1 = require("./messageResolvers");
 const receiptResolvers_1 = require("./receiptResolvers");
+const volunteerResolvers_1 = require("./volunteerResolvers");
 exports.resolvers = {
     Query: {
         ...userResolvers_1.userResolvers.Query,
@@ -29,7 +30,8 @@ exports.resolvers = {
         ...eventResolvers_1.eventResolvers.Query,
         ...eventResolvers_1.internshipResolvers.Query,
         ...messageResolvers_1.messageResolvers.Query,
-        ...receiptResolvers_1.receiptResolvers.Query
+        ...receiptResolvers_1.receiptResolvers.Query,
+        ...volunteerResolvers_1.volunteerResolvers.Query
     },
     Mutation: {
         ...userResolvers_1.userResolvers.Mutation,
@@ -46,6 +48,7 @@ exports.resolvers = {
         ...eventResolvers_1.eventResolvers.Mutation,
         ...eventResolvers_1.internshipResolvers.Mutation,
         ...messageResolvers_1.messageResolvers.Mutation,
-        ...receiptResolvers_1.receiptResolvers.Mutation
+        ...receiptResolvers_1.receiptResolvers.Mutation,
+        ...volunteerResolvers_1.volunteerResolvers.Mutation
     }
 };

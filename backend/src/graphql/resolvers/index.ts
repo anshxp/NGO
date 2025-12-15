@@ -10,6 +10,7 @@ import { projectResolvers, beneficiaryResolvers } from './projectResolvers';
 import { eventResolvers, internshipResolvers } from './eventResolvers';
 import { messageResolvers } from './messageResolvers';
 import { receiptResolvers } from './receiptResolvers';
+import { volunteerResolvers } from './volunteerResolvers';
 
 export const resolvers = {
     Query: {
@@ -27,7 +28,8 @@ export const resolvers = {
         ...eventResolvers.Query,
         ...internshipResolvers.Query,
         ...messageResolvers.Query,
-        ...receiptResolvers.Query
+        ...receiptResolvers.Query,
+        ...volunteerResolvers.Query
     },
     Mutation: {
         ...userResolvers.Mutation,
@@ -44,6 +46,7 @@ export const resolvers = {
         ...eventResolvers.Mutation,
         ...internshipResolvers.Mutation,
         ...messageResolvers.Mutation,
-        ...receiptResolvers.Mutation
+        ...receiptResolvers.Mutation,
+        ...volunteerResolvers.Mutation
     }
 };

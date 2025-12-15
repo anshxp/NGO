@@ -12,7 +12,7 @@ export const userResolvers = {
         getUserByReferralCode: async (_: any, { referralCode }: any) => {
             return await UserModel.findOne({ referralCode });
         },
-        me: async (_: any, __: any, context: any) => {
+        me: async (args: any, context: any) => {
             if (!context.userId) {
                 throw new Error('Not authenticated');
             }
@@ -20,7 +20,7 @@ export const userResolvers = {
         }
     },
     Mutation: {
-        register: async (_: any, { input }: any) => {
+        register: async ({ input }: any, context: any) => {
             const { name, email, password, phone, designation, dateOfBirth, address, referralCode } = input;
 
             // Check if user already exists
@@ -71,7 +71,7 @@ export const userResolvers = {
                 user
             };
         },
-        login: async (_: any, { input }: any) => {
+        login: async ({ input }: any, context: any) => {
             const { email, password } = input;
 
             // Find user
@@ -112,7 +112,7 @@ export const userResolvers = {
             if (status === 'active' && !user.membershipId) {
                 user.membershipId = generateMembershipId(userId);
             }
-            
+
             await user.save();
             return user;
         },

@@ -4,6 +4,7 @@ exports.typeDefs = void 0;
 const donateTypeDefs_1 = require("./donateTypeDefs");
 const userTypeDefs_1 = require("./userTypeDefs");
 const designationTypeDefs_1 = require("./designationTypeDefs");
+const volunteerTypeDefs_1 = require("./volunteerTypeDefs");
 const allTypeDefs_1 = require("./allTypeDefs");
 exports.typeDefs = `
     type Query {
@@ -24,4 +25,5 @@ exports.typeDefs = `
     ${allTypeDefs_1.projectTypeDefs}
     ${allTypeDefs_1.eventInternshipTypeDefs}
     ${allTypeDefs_1.enquiryMessageReceiptTypeDefs}
+    ${volunteerTypeDefs_1.volunteerTypeDefs}
 `;

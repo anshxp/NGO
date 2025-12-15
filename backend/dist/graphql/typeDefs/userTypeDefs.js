@@ -56,14 +56,14 @@ exports.userTypeDefs = `
         password: String!
     }
 
-    type Query {
+    extend type Query {
         getUsers(limit: Int, offset: Int): [User!]!
         getUser(id: ID!): User
         getUserByReferralCode(referralCode: String!): User
         me: User
     }
 
-    type Mutation {
+    extend type Mutation {
         register(input: RegisterInput!): AuthPayload!
         login(input: LoginInput!): AuthPayload!
         updateMembershipStatus(userId: ID!, status: String!): User!

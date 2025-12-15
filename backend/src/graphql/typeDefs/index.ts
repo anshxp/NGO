@@ -1,6 +1,7 @@
 import { donateTypeDefs } from './donateTypeDefs';
 import { userTypeDefs } from './userTypeDefs';
 import { designationTypeDefs } from './designationTypeDefs';
+import { volunteerTypeDefs } from './volunteerTypeDefs';
 import {
     membershipTypeDefs,
     certificateTypeDefs,
@@ -30,4 +31,5 @@ export const typeDefs = `
     ${projectTypeDefs}
     ${eventInternshipTypeDefs}
     ${enquiryMessageReceiptTypeDefs}
+    ${volunteerTypeDefs}
 `;
