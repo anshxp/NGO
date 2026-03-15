@@ -1,0 +1,211 @@
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { useAuth } from '@/contexts/AuthContext';
+import { gql } from '@/lib/graphqlClient';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';
+import { User, CreditCard, Gift, Award, Settings } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+
+export default function UserDashboard() {
+    const { user, logout } = useAuth();
+    const navigate = useNavigate();
+    const [donations, setDonations] = useState<any[]>([]);
+    const [membership, setMembership] = useState<any>(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        if (user) {
+            fetchUserData();
+        }
+    }, [user]);
+
+    const fetchUserData = async () => {
+        const donationsQuery = `
+            query GetMyDonations {
+                getMyDonations {
+                    _id
+                    amount
+                    donation_type
+                    payment_status
+                    createdAt
+                    receiptUrl
+                }
+            }
+        `;
+
+        // Assuming we might have a query for membership details if it's separate from user object
+        // For now, we'll use user object or a simple query if needed.
+        // Let's assume we can augment the user profile or fetch specific stats.
+
+        try {
+            const token = localStorage.getItem('token');
+            const donationResult: any = await gql(donationsQuery, {}, token || undefined);
+            setDonations(donationResult.getMyDonations || []);
+
+            // Mock membership data if backend doesn't return it full yet, or use user data
+            if (user) {
+                setMembership({
+                    type: user.role === 'admin' ? 'Administrator' : 'General Member',
+                    status: 'Active',
+                    joinDate: '2024-01-01', // This should come from DB
+                    idCardUrl: '#'
+                });
+            }
+
+        } catch (error) {
+            console.error('Error fetching dashboard data:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    if (!user) return <div>Please log in</div>;
+
+    return (
+        <div className="min-h-screen bg-gray-50 pb-12">
+            {/* Header */}
+            <div className="bg-blue-600 text-white py-8">
+                <div className="container mx-auto px-4">
+                    <div className="flex justify-between items-center">
+                        <div className="flex items-center gap-4">
+                            <div className="h-16 w-16 bg-white rounded-full flex items-center justify-center text-blue-600 text-2xl font-bold">
+                                {user.name.charAt(0).toUpperCase()}
+                            </div>
+                            <div>
+                                <h1 className="text-2xl font-bold">Welcome, {user.name}</h1>
+                                <p className="text-blue-100">{user.email}</p>
+                            </div>
+                        </div>
+                        <Button variant="secondary" onClick={logout}>Logout</Button>
+                    </div>
+                </div>
+            </div>
+
+            <div className="container mx-auto px-4 mt-8">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                    {/* Sidebar / Quick Actions */}
+                    <div className="md:col-span-1 space-y-4">
+                        <Card>
+                            <CardContent className="p-4 space-y-2">
+                                <Button variant="ghost" className="w-full justify-start gap-2">
+                                    <User size={18} /> Profile
+                                </Button>
+                                <Button variant="ghost" className="w-full justify-start gap-2" onClick={() => navigate('/donate')}>
+                                    <Gift size={18} /> Donate Now
+                                </Button>
+                                <Button variant="ghost" className="w-full justify-start gap-2">
+                                    <CreditCard size={18} /> ID Card
+                                </Button>
+                                <Button variant="ghost" className="w-full justify-start gap-2">
+                                    <Award size={18} /> Certificates
+                                </Button>
+                                <Button variant="ghost" className="w-full justify-start gap-2">
+                                    <Settings size={18} /> Settings
+                                </Button>
+                            </CardContent>
+                        </Card>
+
+                        {membership && (
+                            <Card className="bg-gradient-to-br from-blue-500 to-blue-700 text-white border-none">
+                                <CardHeader>
+                                    <CardTitle className="text-lg">Membership Card</CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="space-y-4">
+                                        <div>
+                                            <p className="text-xs text-blue-100">Name</p>
+                                            <p className="font-semibold">{user.name}</p>
+                                        </div>
+                                        <div className="flex justify-between">
+                                            <div>
+                                                <p className="text-xs text-blue-100">ID No.</p>
+                                                <p className="font-mono text-sm">NGO-{user._id?.substring(0, 8).toUpperCase()}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-xs text-blue-100">Type</p>
+                                                <p className="text-sm">{membership.type}</p>
+                                            </div>
+                                        </div>
+                                        <div className="pt-4 border-t border-blue-400">
+                                            <Badge variant="secondary" className="bg-green-400 text-green-900 border-none">
+                                                {membership.status}
+                                            </Badge>
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        )}
+                    </div>
+
+                    {/* Main Content */}
+                    <div className="md:col-span-3">
+                        <Tabs defaultValue="donations" className="space-y-6">
+                            <TabsList>
+                                <TabsTrigger value="donations">My Donations</TabsTrigger>
+                                <TabsTrigger value="certificates">Certificates</TabsTrigger>
+                                <TabsTrigger value="activities">Activities</TabsTrigger>
+                            </TabsList>
+
+                            <TabsContent value="donations">
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle>Donation History</CardTitle>
+                                        <CardDescription>Thank you for your support</CardDescription>
+                                    </CardHeader>
+                                    <CardContent>
+                                        {donations.length > 0 ? (
+                                            <div className="space-y-4">
+                                                {donations.map((donation) => (
+                                                    <div key={donation._id} className="flex justify-between items-center p-4 border rounded-lg">
+                                                        <div>
+                                                            <p className="font-medium">₹{donation.amount}</p>
+                                                            <p className="text-sm text-gray-500">
+                                                                {new Date(parseInt(donation.createdAt)).toLocaleDateString()}
+                                                            </p>
+                                                        </div>
+                                                        <div className="flex items-center gap-3">
+                                                            <Badge variant={donation.payment_status === 'completed' ? 'default' : 'destructive'}>
+                                                                {donation.payment_status}
+                                                            </Badge>
+                                                            {donation.receiptUrl && (
+                                                                <Button variant="outline" size="sm" asChild>
+                                                                    <a href={donation.receiptUrl} target="_blank" rel="noopener noreferrer">
+                                                                        Receipt
+                                                                    </a>
+                                                                </Button>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <div className="text-center py-12 text-gray-500">
+                                                <p>No donations found.</p>
+                                                <Button className="mt-4" onClick={() => navigate('/donate')}>
+                                                    Make your first donation
+                                                </Button>
+                                            </div>
+                                        )}
+                                    </CardContent>
+                                </Card>
+                            </TabsContent>
+
+                            <TabsContent value="certificates">
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle>My Certificates</CardTitle>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <p className="text-gray-500 text-center py-8">No certificates issued yet.</p>
+                                    </CardContent>
+                                </Card>
+                            </TabsContent>
+                        </Tabs>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+}
