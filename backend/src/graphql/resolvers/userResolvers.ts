@@ -3,14 +3,15 @@ import { generateToken, hashPassword, comparePassword, generateReferralCode, gen
 
 export const userResolvers = {
     Query: {
-        getUsers: async (_: any, { limit = 10, offset = 0 }: any) => {
+        getUsers: async (args: any, context: any) => {
+            const { limit = 10, offset = 0 } = args;
             return await UserModel.find().limit(limit).skip(offset).populate('designation');
         },
-        getUser: async (_: any, { id }: any) => {
-            return await UserModel.findById(id).populate('designation referredBy');
+        getUser: async (args: any, context: any) => {
+            return await UserModel.findById(args.id).populate('designation referredBy');
         },
-        getUserByReferralCode: async (_: any, { referralCode }: any) => {
-            return await UserModel.findOne({ referralCode });
+        getUserByReferralCode: async (args: any, context: any) => {
+            return await UserModel.findOne({ referralCode: args.referralCode });
         },
         me: async (args: any, context: any) => {
             if (!context.userId) {
@@ -76,6 +77,7 @@ export const userResolvers = {
 
             // Find user
             const user = await UserModel.findOne({ email });
+
             if (!user) {
                 throw new Error('Invalid credentials');
             }
@@ -98,11 +100,12 @@ export const userResolvers = {
                 user
             };
         },
-        updateMembershipStatus: async (_: any, { userId, status }: any, context: any) => {
+        updateMembershipStatus: async (args: any, context: any) => {
             if (!context.userId || context.user.role !== 'admin') {
                 throw new Error('Unauthorized');
             }
 
+            const { userId, status } = args;
             const user = await UserModel.findById(userId);
             if (!user) {
                 throw new Error('User not found');
@@ -116,11 +119,12 @@ export const userResolvers = {
             await user.save();
             return user;
         },
-        generateMembershipId: async (_: any, { userId }: any, context: any) => {
+        generateMembershipId: async (args: any, context: any) => {
             if (!context.userId || context.user.role !== 'admin') {
                 throw new Error('Unauthorized');
             }
 
+            const { userId } = args;
             const user = await UserModel.findById(userId);
             if (!user) {
                 throw new Error('User not found');

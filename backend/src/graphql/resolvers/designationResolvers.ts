@@ -2,18 +2,20 @@ import { DesignationModel } from '../../schema/designation';
 
 export const designationResolvers = {
     Query: {
-        getDesignations: async (_: any, { limit = 50, offset = 0 }: any) => {
+        getDesignations: async (args: any, context: any) => {
+            const { limit = 50, offset = 0 } = args;
             return await DesignationModel.find().limit(limit).skip(offset);
         },
-        getDesignation: async (_: any, { id }: any) => {
-            return await DesignationModel.findById(id);
+        getDesignation: async (args: any, context: any) => {
+            return await DesignationModel.findById(args.id);
         }
     },
     Mutation: {
-        createDesignation: async (_: any, { input }: any, context: any) => {
+        createDesignation: async (args: any, context: any) => {
             if (!context.userId || context.user.role !== 'admin') {
                 throw new Error('Unauthorized');
             }
+            const { input } = args;
             const existing = await DesignationModel.findOne({ code: input.code });
             if (existing) {
                 throw new Error('Designation with this code already exists');
@@ -27,10 +29,11 @@ export const designationResolvers = {
             await designation.save();
             return designation;
         },
-        updateDesignation: async (_: any, { id, input }: any, context: any) => {
+        updateDesignation: async (args: any, context: any) => {
             if (!context.userId || context.user.role !== 'admin') {
                 throw new Error('Unauthorized');
             }
+            const { id, input } = args;
             const designation = await DesignationModel.findByIdAndUpdate(
                 id,
                 { ...input, updated_at: new Date() },
@@ -41,11 +44,11 @@ export const designationResolvers = {
             }
             return designation;
         },
-        deleteDesignation: async (_: any, { id }: any, context: any) => {
+        deleteDesignation: async (args: any, context: any) => {
             if (!context.userId || context.user.role !== 'admin') {
                 throw new Error('Unauthorized');
             }
-            const res = await DesignationModel.findByIdAndDelete(id);
+            const res = await DesignationModel.findByIdAndDelete(args.id);
             return !!res;
         }
     }
