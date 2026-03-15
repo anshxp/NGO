@@ -56,7 +56,7 @@ export const receiptResolvers = {
 
                 const savedReceipt = await receipt.save();
                 return { ...savedReceipt.toObject(), success: true };
-            } catch (error: any) {
+            } catch (error) {
                 throw new Error(`Receipt creation failed: ${error.message}`);
             }
         },

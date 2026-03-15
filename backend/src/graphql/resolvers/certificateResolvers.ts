@@ -82,7 +82,7 @@ export const certificateResolvers = {
                     success: true,
                     message: 'Certificate issued successfully'
                 };
-            } catch (error: any) {
+            } catch (error) {
                 throw new Error(`Certificate issuance failed: ${error.message}`);
             }
         },
@@ -142,7 +142,7 @@ export const certificateResolvers = {
                     success: true,
                     message: 'Visitor certificate issued successfully'
                 };
-            } catch (error: any) {
+            } catch (error) {
                 throw new Error(`Visitor certificate issuance failed: ${error.message}`);
             }
         }

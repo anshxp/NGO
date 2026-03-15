@@ -9,7 +9,7 @@ export interface IDesignation extends Document {
     updated_at: Date;
 }
 
-const DesignationSchema: Schema = new Schema<Readonly<IDesignation>>({
+const DesignationSchema: Schema = new Schema({
     name: { type: String, required: true, trim: true },
     code: { type: String, required: true, unique: true, uppercase: true },
     fee: { type: Number, default: 0 },
@@ -18,7 +18,7 @@ const DesignationSchema: Schema = new Schema<Readonly<IDesignation>>({
     updated_at: { type: Date, default: Date.now }
 });
 
-DesignationSchema.pre('save', function (next) {
+DesignationSchema.pre('save', function (this: any, next) {
     this.updated_at = new Date();
     next();
 });

@@ -34,7 +34,7 @@ export const authMiddleware = async (req: AuthenticatedRequest, res: Response, n
         req.token = token;
 
         next();
-    } catch (error: any) {
+    } catch (error) {
         res.status(401).json({ error: error.message || 'Unauthorized' });
     }
 };

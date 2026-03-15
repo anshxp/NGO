@@ -72,7 +72,7 @@ export const messageResolvers = {
                 }
 
                 return { ...savedMessage.toObject(), success: true };
-            } catch (error: any) {
+            } catch (error) {
                 throw new Error(`Failed to send message: ${error.message}`);
             }
         },

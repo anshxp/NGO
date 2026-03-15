@@ -42,10 +42,15 @@ export const createPayUOrder = async (
             hash
         });
 
+        const entries: { [key: string]: string } = {};
+        formData.forEach((value, key) => {
+            entries[key] = value;
+        });
+
         // Return the form data for frontend form submission
         return {
             baseUrl: `${payuConfig.baseUrl}/_payment`,
-            formData: Object.fromEntries(formData)
+            formData: entries
         };
     } catch (error) {
         console.error('PayU order creation failed:', error);

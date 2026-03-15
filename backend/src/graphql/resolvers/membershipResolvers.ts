@@ -84,7 +84,7 @@ export const membershipResolvers = {
                     success: true,
                     message: 'Membership registered successfully'
                 };
-            } catch (error: any) {
+            } catch (error) {
                 throw new Error(`Membership registration failed: ${error.message}`);
             }
         },
@@ -108,7 +108,7 @@ export const membershipResolvers = {
                     success: true,
                     message: 'Membership renewed successfully'
                 };
-            } catch (error: any) {
+            } catch (error) {
                 throw new Error(`Membership renewal failed: ${error.message}`);
             }
         },

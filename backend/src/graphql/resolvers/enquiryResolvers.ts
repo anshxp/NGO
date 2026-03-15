@@ -99,7 +99,7 @@ export const enquiryResolvers = {
                     });
                     
                     console.log('✅ Email sent successfully');
-                } catch (emailError: any) {
+                } catch (emailError) {
                     console.error('⚠️ Email sending error:', emailError.message);
                 }
 
@@ -107,7 +107,7 @@ export const enquiryResolvers = {
                 console.log('✅ Returning response:', response);
                 console.log('🔵 ===== submitEnquiry SUCCESS =====\n');
                 return response;
-            } catch (error: any) {
+            } catch (error) {
                 console.error('\n❌ ===== submitEnquiry ERROR =====');
                 console.error('💬 Error message:', error.message);
                 console.error('📍 Error stack:', error.stack);
@@ -154,7 +154,7 @@ export const enquiryResolvers = {
                 });
 
                 return { ...savedEnquiry.toObject(), success: true, message: 'Reply sent successfully' };
-            } catch (error: any) {
+            } catch (error) {
                 throw new Error(`Failed to reply: ${error.message}`);
             }
         },

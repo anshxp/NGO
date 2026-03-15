@@ -45,7 +45,7 @@ export const eventResolvers = {
 
                 const savedEvent = await event.save();
                 return { ...savedEvent.toObject(), success: true };
-            } catch (error: any) {
+            } catch (error) {
                 throw new Error(`Event creation failed: ${error.message}`);
             }
         },
@@ -89,7 +89,7 @@ export const eventResolvers = {
                 }
 
                 return { ...registration.toObject(), success: true };
-            } catch (error: any) {
+            } catch (error) {
                 throw new Error(`Registration failed: ${error.message}`);
             }
         }
@@ -133,7 +133,7 @@ export const internshipResolvers = {
 
                 const savedInternship = await internship.save();
                 return { ...savedInternship.toObject(), success: true };
-            } catch (error: any) {
+            } catch (error) {
                 throw new Error(`Internship creation failed: ${error.message}`);
             }
         },
@@ -153,7 +153,7 @@ export const internshipResolvers = {
                 await internship.save();
 
                 return { ...internship.toObject(), success: true };
-            } catch (error: any) {
+            } catch (error) {
                 throw new Error(`Application failed: ${error.message}`);
             }
         },
@@ -173,7 +173,7 @@ export const internshipResolvers = {
 
                 await internship.save();
                 return { ...internship.toObject(), success: true };
-            } catch (error: any) {
+            } catch (error) {
                 throw new Error(`Selection failed: ${error.message}`);
             }
         }

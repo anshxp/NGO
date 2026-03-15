@@ -40,7 +40,7 @@ export const campaignResolvers = {
 
                 const savedCampaign = await campaign.save();
                 return { ...savedCampaign.toObject(), success: true };
-            } catch (error: any) {
+            } catch (error) {
                 throw new Error(`Campaign creation failed: ${error.message}`);
             }
         },
@@ -77,7 +77,7 @@ export const campaignResolvers = {
                 }
 
                 return { ...savedCampaign.toObject(), success: true };
-            } catch (error: any) {
+            } catch (error) {
                 throw new Error(`Donation failed: ${error.message}`);
             }
         },

@@ -44,7 +44,7 @@ export const projectResolvers = {
 
                 const savedProject = await project.save();
                 return { ...savedProject.toObject(), success: true };
-            } catch (error: any) {
+            } catch (error) {
                 throw new Error(`Project creation failed: ${error.message}`);
             }
         },
@@ -60,7 +60,7 @@ export const projectResolvers = {
 
                 const savedProject = await project.save();
                 return { ...savedProject.toObject(), success: true };
-            } catch (error: any) {
+            } catch (error) {
                 throw new Error(`Failed to add beneficiary: ${error.message}`);
             }
         },
@@ -89,7 +89,7 @@ export const projectResolvers = {
                 }
 
                 return { ...savedExpense.toObject(), success: true };
-            } catch (error: any) {
+            } catch (error) {
                 throw new Error(`Failed to record expense: ${error.message}`);
             }
         },
@@ -159,7 +159,7 @@ export const beneficiaryResolvers = {
 
                 const savedBeneficiary = await beneficiary.save();
                 return { ...savedBeneficiary.toObject(), success: true };
-            } catch (error: any) {
+            } catch (error) {
                 throw new Error(`Failed to add beneficiary: ${error.message}`);
             }
         },
@@ -198,7 +198,7 @@ export const beneficiaryResolvers = {
 
                 await beneficiary.save();
                 return { ...beneficiary.toObject(), success: true };
-            } catch (error: any) {
+            } catch (error) {
                 throw new Error(`Failed to add help history: ${error.message}`);
             }
         }
