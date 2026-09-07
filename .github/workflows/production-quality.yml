@@ -6,7 +6,26 @@ on:
   pull_request:
     branches: [master, production-hardening]
 
+permissions:
+  contents: read
+
 jobs:
+  repository-hygiene:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify repository hygiene
+        shell: bash
+        run: |
+          if git ls-files | grep -E '(^|/)(node_modules|dist)/'; then
+            echo "Tracked dependency/build artifacts detected. Remove them from Git."
+            exit 1
+          fi
+          if git ls-files | grep -E '^(frontend/src/.*\\.(ts|tsx)$|backend/src/.*\\.ts$)'; then
+            echo "TypeScript application source detected after the JavaScript migration."
+            exit 1
+          fi
+
   backend:
     runs-on: ubuntu-latest
     defaults:
