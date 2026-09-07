@@ -7,6 +7,7 @@ import cookieParser from 'cookie-parser';
 import { connectDB } from './connection/db';
 import { apiRouter } from './routes/api';
 import adminRouter from './routes/admin';
+import reportRouter from './routes/reports';
 import { apiSecurity } from './middleware/apiSecurity';
 import { auditSensitiveRequest } from './middleware/audit';
 import mongoose from 'mongoose';
@@ -51,6 +52,7 @@ app.use('/api/auth/register', authLimiterHandler);
 
 app.use('/api', apiSecurity);
 app.use('/api', auditSensitiveRequest);
+app.use('/api/admin/reports', reportRouter);
 app.use('/api/admin', adminRouter);
 app.use('/api', apiRouter);
 
