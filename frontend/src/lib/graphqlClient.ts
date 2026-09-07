@@ -3,41 +3,30 @@ export interface GraphQLResponse<T> {
   errors?: { message: string }[];
 }
 
-// const baseURL = import.meta.env.VITE_API_URL || 'http://localhost:7856';
-const baseURL = 'http://127.0.0.1:7856';
-const API_URL = `${baseURL}/graphql`;
+const baseURL = import.meta.env.VITE_API_URL || '';
+const API_URL = `${baseURL.replace(/\/$/, '')}/graphql`;
 
-export async function gql<T>(query: string, variables?: Record<string, any>, token?: string): Promise<T> {
+export async function gql<T>(query: string, variables?: Record<string, any>, _legacyToken?: string): Promise<T> {
+  const res = await fetch(API_URL, {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ query, variables })
+  });
+
+  let json: GraphQLResponse<T>;
   try {
-    console.log('🔵 GraphQL Request:', { query: query.substring(0, 100) + '...', variables });
-
-    const res = await fetch(API_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(token ? { Authorization: `Bearer ${token}` } : {})
-      },
-      body: JSON.stringify({ query, variables })
-    });
-
-    const json: GraphQLResponse<T> = await res.json();
-
-    if (json.errors && json.errors.length) {
-      console.error('🔴 GraphQL Error:', json.errors);
-      throw new Error(json.errors[0].message);
-    }
-
-    if (!json.data) {
-      console.error('🔴 No data returned from GraphQL');
-      throw new Error('No data returned');
-    }
-
-    console.log('✅ GraphQL Response Success:', json.data);
-    return json.data;
-  } catch (error: any) {
-    console.error('❌ GraphQL Request Failed:', error.message);
-    throw error;
+    json = await res.json();
+  } catch (_error) {
+    throw new Error('Invalid server response');
   }
+
+  if (!res.ok || (json.errors && json.errors.length)) {
+    throw new Error(json.errors?.[0]?.message || 'Request failed');
+  }
+
+  if (!json.data) throw new Error('No data returned');
+  return json.data;
 }
 
 export const MUTATIONS = {
