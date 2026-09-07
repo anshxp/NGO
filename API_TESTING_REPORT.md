@@ -1,232 +1,56 @@
-# NGO Management System - Complete API Testing Report
+# NGO Management System - API Testing Report
 
-**Date**: December 3, 2025  
-**Test Status**: ✅ **ALL TESTS PASSED (15/15 - 100%)**
+## Scope
 
-## Executive Summary
+This repository now uses REST/JSON APIs under `/api`. The previous report was written against the retired GraphQL implementation and is no longer a valid API specification.
 
-I have successfully tested all major APIs in the NGO Management System. All 15 critical API endpoints are functioning correctly, including authentication, data retrieval, and data creation operations.
+## Current REST smoke-test matrix
 
-## Test Results
+| Area | Endpoint | Verification requirement |
+|---|---|---|
+| Health | `GET /health` | Returns HTTP 200 with service status |
+| Readiness | `GET /ready` | Returns 200 only when MongoDB is connected |
+| Register | `POST /api/auth/register` | Creates a user and sets HttpOnly auth cookie |
+| Login | `POST /api/auth/login` | Authenticates valid credentials and sets cookie |
+| Current user | `GET /api/auth/me` | Returns the authenticated user |
+| Logout | `POST /api/auth/logout` | Clears authentication cookie |
+| News | `GET /api/news` | Returns published news |
+| Activities | `GET /api/activities` | Returns published activities |
+| Campaigns | `GET /api/campaigns` | Returns campaigns |
+| Projects | `GET /api/projects` | Returns projects |
+| Events | `GET /api/events` | Returns events |
+| Internships | `GET /api/internships` | Returns open internships |
+| Certificate verification | `GET /api/certificates/verify/:code` | Returns certificate or 404 |
+| Enquiry | `POST /api/enquiries` | Validates and persists an enquiry |
+| Donation | `POST /api/donations` | Validates and creates donation record |
+| User donations | `GET /api/donations/user/history` | Returns the authenticated user's donation history |
+| User receipts | `GET /api/receipts/user` | Returns the authenticated user's receipts |
+| Admin volunteers | `GET /api/admin/volunteers` | Requires admin authorization |
+| Admin volunteer create | `POST /api/admin/volunteers` | Creates volunteer record |
+| Admin volunteer status | `PATCH /api/admin/volunteers/:id/status` | Updates volunteer status |
 
-### 1. Authentication APIs ✅ (3/3 Passed)
+## Automated validation
 
-| Test | Endpoint | Status | Notes |
-|------|----------|--------|-------|
-| User Registration | `register` mutation | ✅ PASS | Creates user, generates JWT token |
-| User Login | `login` mutation | ✅ PASS | Authenticates user, returns token |
-| Get Current User | `me` query | ✅ PASS | Protected route works with JWT |
+The repository workflow `.github/workflows/production-quality.yml` runs:
 
-**Key Findings**:
-- JWT token generation working correctly
-- Password hashing functional
-- Token-based authentication operational
-- Protected routes properly secured
+```text
+Backend: npm install -> typecheck -> build -> npm audit --audit-level=high
+Frontend: npm install -> lint -> build -> npm audit --audit-level=high
+```
 
-### 2. Enquiry APIs ✅ (1/1 Passed)
+## Important distinction
 
-| Test | Endpoint | Status | Notes |
-|------|----------|--------|-------|
-| Submit Enquiry | `submitEnquiry` mutation | ✅ PASS | Creates enquiry, saves to database |
+A successful build does not prove that MongoDB, SMTP, payment gateways, production CORS/cookies, or the deployed frontend/backend connection work end-to-end. Those checks require the corresponding environment and services.
 
-**Key Findings**:
-- Enquiry submission working
-- Email notifications queued (if SMTP configured)
-- Data persisted to MongoDB
+The old GraphQL test report claiming 15/15 GraphQL tests passed has been retired because those endpoints are no longer part of the application.
 
-### 3. Donation APIs ✅ (2/2 Passed)
+## Recommended end-to-end test order
 
-| Test | Endpoint | Status | Notes |
-|------|----------|--------|-------|
-| Create Donation | `createDonation` mutation | ✅ PASS | Creates donation record |
-| Get Donation Stats | `getDonationStats` query | ✅ PASS | Returns aggregated statistics |
-
-**Key Findings**:
-- Donation creation functional
-- Payment status tracking working
-- Statistics aggregation operational
-
-### 4. User Management APIs ✅ (1/1 Passed)
-
-| Test | Endpoint | Status | Notes |
-|------|----------|--------|-------|
-| Get Users | `getUsers` query | ✅ PASS | Returns user list (admin protected) |
-
-**Key Findings**:
-- User listing functional
-- Admin-only routes properly protected
-
-### 5. Campaign APIs ✅ (1/1 Passed)
-
-| Test | Endpoint | Status | Notes |
-|------|----------|--------|-------|
-| Get Campaigns | `getCampaigns` query | ✅ PASS | Returns campaign list |
-
-**Key Findings**:
-- Campaign retrieval working
-- Empty arrays handled correctly
-
-### 6. News APIs ✅ (1/1 Passed)
-
-| Test | Endpoint | Status | Notes |
-|------|----------|--------|-------|
-| Get All News | `getAllNews` query | ✅ PASS | Returns news articles |
-
-**Key Findings**:
-- News retrieval functional
-- Status filtering available
-
-### 7. Activity APIs ✅ (1/1 Passed)
-
-| Test | Endpoint | Status | Notes |
-|------|----------|--------|-------|
-| Get Activities | `getActivities` query | ✅ PASS | Returns activity feed |
-
-**Key Findings**:
-- Activity feed retrieval working
-- Social features accessible
-
-### 8. Event APIs ✅ (1/1 Passed)
-
-| Test | Endpoint | Status | Notes |
-|------|----------|--------|-------|
-| Get Events | `getEvents` query | ✅ PASS | Returns event list |
-
-**Key Findings**:
-- Event listing functional
-- Date-based queries supported
-
-### 9. Project APIs ✅ (1/1 Passed)
-
-| Test | Endpoint | Status | Notes |
-|------|----------|--------|-------|
-| Get Projects | `getProjects` query | ✅ PASS | Returns project list |
-
-**Key Findings**:
-- Project retrieval working
-- Budget tracking accessible
-
-### 10. Beneficiary APIs ✅ (1/1 Passed)
-
-| Test | Endpoint | Status | Notes |
-|------|----------|--------|-------|
-| Get Beneficiaries | `getBeneficiaries` query | ✅ PASS | Returns beneficiary list (admin protected) |
-
-**Key Findings**:
-- Beneficiary listing functional
-- Admin protection working
-
-### 11. Message APIs ✅ (1/1 Passed)
-
-| Test | Endpoint | Status | Notes |
-|------|----------|--------|-------|
-| Get Messages | `getMessages` query | ✅ PASS | Returns user messages |
-
-**Key Findings**:
-- Message retrieval working
-- User-specific filtering functional
-
-### 12. Receipt APIs ✅ (1/1 Passed)
-
-| Test | Endpoint | Status | Notes |
-|------|----------|--------|-------|
-| Get User Receipts | `getUserReceipts` query | ✅ PASS | Returns user's receipts |
-
-**Key Findings**:
-- Receipt retrieval functional
-- User-specific filtering working
-
-## Bug Fixes Applied During Testing
-
-### Critical Fixes
-
-1. **Resolver Signature Mismatch** (Fixed in `userResolvers.ts` and `donateResolvers.ts`)
-   - **Issue**: Resolvers used `(parent, args, context)` signature
-   - **Fix**: Changed to `(args, context)` for `express-graphql` with `rootValue`
-   - **Impact**: Fixed authentication and mutation execution
-
-2. **Schema Field Naming** (Identified in test script)
-   - **Issue**: Some types use `id` while others use `_id`
-   - **Fix**: Updated test queries to match schema definitions
-   - **Impact**: All queries now work correctly
-
-## API Coverage
-
-### Tested Modules (12/17 core modules)
-- ✅ Authentication & Authorization
-- ✅ User Management
-- ✅ Enquiry Management
-- ✅ Donation Management
-- ✅ Campaign Management
-- ✅ News Management
-- ✅ Activity Feed
-- ✅ Event Management
-- ✅ Project Management
-- ✅ Beneficiary Management
-- ✅ Message Broadcasting
-- ✅ Receipt Management
-
-### Not Tested (Require Additional Setup)
-- ⏭️ Membership Management (requires designation ID)
-- ⏭️ Certificate Management (requires certificate templates)
-- ⏭️ Internship Management (requires internship data)
-- ⏭️ Payment Gateway Integration (requires API keys)
-- ⏭️ Volunteer Management (requires volunteer data)
-
-## Recommendations
-
-### Immediate Actions
-1. ✅ **DONE**: Fix resolver signatures across all resolver files
-2. ✅ **DONE**: Verify authentication flow
-3. ✅ **DONE**: Test critical data operations
-
-### Short-term (Next Steps)
-1. **Apply Resolver Fixes**: Update remaining resolver files with correct signatures:
-   - `certificateResolvers.ts`
-   - `newsResolvers.ts`
-   - `campaignResolvers.ts`
-   - `projectResolvers.ts`
-   - `eventResolvers.ts`
-   - `messageResolvers.ts`
-   - `receiptResolvers.ts`
-
-2. **Add Test Data**: Create seed data for:
-   - Campaigns
-   - News articles
-   - Events
-   - Projects
-   - Beneficiaries
-
-3. **Configure Services**:
-   - Set up real SMTP credentials for email testing
-   - Configure payment gateway test keys
-   - Set up file storage for PDFs and QR codes
-
-### Long-term
-1. **Automated Testing**: Implement Jest/Mocha test suite
-2. **Integration Tests**: Test complete user workflows
-3. **Performance Testing**: Load testing for production readiness
-4. **Security Audit**: Penetration testing and vulnerability scanning
-
-## Conclusion
-
-The NGO Management System's API layer is **fully functional and production-ready** for the tested modules. All critical operations (authentication, data retrieval, data creation) are working correctly.
-
-### System Health: ✅ EXCELLENT
-- **API Functionality**: 100% (15/15 tests passed)
-- **Authentication**: ✅ Working
-- **Data Persistence**: ✅ Working
-- **Error Handling**: ✅ Working
-- **Protected Routes**: ✅ Working
-
-### Ready For:
-- ✅ Frontend integration
-- ✅ User acceptance testing
-- ✅ Staging deployment
-- ✅ Production deployment (with proper configuration)
-
----
-
-**Test Script Location**: `/home/anshxhhh/Desktop/projects/NGO/test_all_apis.sh`  
-**Run Command**: `./test_all_apis.sh`  
-**Last Run**: December 3, 2025 13:07 IST
+1. Start MongoDB or connect to MongoDB Atlas.
+2. Start backend and verify `/health` and `/ready`.
+3. Start frontend and confirm `VITE_API_URL`.
+4. Register/login and verify `/api/auth/me`.
+5. Submit an enquiry and confirm the MongoDB document.
+6. Test authenticated donation history/receipts.
+7. Test admin volunteer management.
+8. Test sandbox payment verification and SMTP separately.
