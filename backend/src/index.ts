@@ -1,4 +1,4 @@
-import express, { Express, Request, Response } from 'express';
+import express, { Express, Request, Response, RequestHandler } from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
 import helmet from 'helmet';
@@ -40,11 +40,13 @@ app.use(express.urlencoded({ extended: false, limit: '100kb' }));
 
 const generalLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 300, standardHeaders: 'draft-7', legacyHeaders: false, message: { error: 'Too many requests. Please try again later.' } });
 const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 10, standardHeaders: 'draft-7', legacyHeaders: false, skipSuccessfulRequests: true, message: { error: 'Too many authentication attempts. Please try again later.' } });
-app.use(generalLimiter as any);
+const generalLimiterHandler: RequestHandler = (req, res, next) => void (generalLimiter as any)(req, res, next);
+const authLimiterHandler: RequestHandler = (req, res, next) => void (authLimiter as any)(req, res, next);
+app.use(generalLimiterHandler);
 app.get('/health', (_req: Request, res: Response) => res.status(200).json({ status: 'ok', service: 'ngo-api' }));
 app.get('/ready', (_req: Request, res: Response) => { const ready = mongoose.connection.readyState === 1; res.status(ready ? 200 : 503).json({ status: ready ? 'ready' : 'not_ready' }); });
-app.use('/api/auth/login', authLimiter as any);
-app.use('/api/auth/register', authLimiter as any);
+app.use('/api/auth/login', authLimiterHandler);
+app.use('/api/auth/register', authLimiterHandler);
 
 app.use('/api', apiSecurity);
 app.use('/api/admin', adminRouter);
