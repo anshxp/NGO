@@ -29,16 +29,16 @@ const generalLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 300, standar
 const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 10, standardHeaders: 'draft-7', legacyHeaders: false, skipSuccessfulRequests: true, message: { error: 'Too many authentication attempts. Please try again later.' } });
 const generalLimiterHandler: RequestHandler = (req, res, next) => void (generalLimiter as any)(req, res, next);
 const authLimiterHandler: RequestHandler = (req, res, next) => void (authLimiter as any)(req, res, next);
-app.use(generalLimiterHandler);
+app.use(generalLimiterHandler as any);
 app.get('/health', (_req: Request, res: Response) => res.status(200).json({ status: 'ok', service: 'ngo-api' }));
 app.get('/ready', (_req: Request, res: Response) => { const ready = mongoose.connection.readyState === 1; res.status(ready ? 200 : 503).json({ status: ready ? 'ready' : 'not_ready' }); });
-app.use('/api/auth/login', authLimiterHandler); app.use('/api/auth/register', authLimiterHandler);
-app.use('/api/auth', authRouter);
-app.use('/api', apiSecurity);
-app.use('/api', auditSensitiveRequest);
-app.use('/api/admin/reports', reportRouter);
-app.use('/api/admin', adminRouter);
-app.use('/api', apiRouter);
+app.use('/api/auth/login', authLimiterHandler as any); app.use('/api/auth/register', authLimiterHandler as any);
+app.use('/api/auth', authRouter as any);
+app.use('/api', apiSecurity as any);
+app.use('/api', auditSensitiveRequest as any);
+app.use('/api/admin/reports', reportRouter as any);
+app.use('/api/admin', adminRouter as any);
+app.use('/api', apiRouter as any);
 app.use((err: any, _req: Request, res: Response, _next: any) => { console.error('Unhandled HTTP error', err?.message || 'unknown error'); if (res.headersSent) return; res.status(500).json({ error: 'Internal server error' }); });
 async function start() { try { await connectDB(); app.listen(PORT, () => console.log(`NGO API listening on port ${PORT}`)); } catch (_err) { console.error('Error starting server'); process.exit(1); } }
 start();
