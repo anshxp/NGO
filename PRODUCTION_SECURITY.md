@@ -14,17 +14,15 @@ This application handles donor, member, volunteer, beneficiary and financial inf
 
 - Authentication cookies are HttpOnly and are not readable by browser JavaScript.
 - Access tokens are short-lived.
-- Production cookies must use Secure and SameSite protection.
+- Production cookies use Secure and SameSite protection.
 - Admin accounts should have MFA before launch.
-- Password reset and email verification must use single-use, expiring tokens.
+- Password reset and email verification should use single-use, expiring tokens.
 
 ## Authorization
 
-Every sensitive operation must enforce authorization on the server. Never rely on frontend route guards.
+Every sensitive operation must enforce authorization on the server. Frontend route guards are not security boundaries.
 
-Minimum roles are `admin`, `coordinator`, `volunteer`, and `member`, but sensitive resources should also use resource-level ownership/assignment checks.
-
-Beneficiary data must never be exposed to public or ordinary member queries.
+Sensitive resources should also use resource-level ownership/assignment checks where applicable. Beneficiary data must not be exposed to public or ordinary member queries.
 
 ## API security
 
@@ -32,9 +30,9 @@ Beneficiary data must never be exposed to public or ordinary member queries.
 - Helmet/security headers are enabled.
 - JSON and URL-encoded request bodies have size limits.
 - Global and authentication rate limits are enabled.
-- GraphQL IDE/introspection should be disabled in production unless explicitly required.
-- GraphQL depth/complexity limiting should be enabled before exposing the endpoint publicly.
+- `/api` is the application API boundary.
 - Production errors must not expose stack traces, database errors or internal implementation details.
+- The application does not expose a GraphQL endpoint.
 
 ## Financial security
 
@@ -52,7 +50,7 @@ Enable encrypted transport, restricted network access, least-privilege credentia
 
 ## CI/CD
 
-Every pull request should run frontend lint/build, backend typecheck/build, dependency vulnerability scanning and automated tests. Production deployment should only occur from a protected branch after checks pass.
+Pull requests should run frontend lint/build, backend typecheck/build, dependency vulnerability scanning and automated tests. Production deployment should only occur from a protected branch after required checks pass.
 
 ## Incident response
 
@@ -63,8 +61,8 @@ Maintain a documented process for credential rotation, account compromise, payme
 Do not launch until:
 
 - all P0 security findings are closed;
-- payment flows have been tested with real gateway sandbox/webhook scenarios;
-- authorization tests cover every sensitive resolver;
+- payment flows have been tested with gateway sandbox/webhook scenarios;
+- authorization tests cover every sensitive REST route;
 - dependency and secret scans pass;
 - backups have been restored successfully in a test environment;
 - production HTTPS and cookie behavior have been verified;
