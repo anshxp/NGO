@@ -51,8 +51,8 @@ app.set('trust proxy', 1);
 app.use(helmet({
     contentSecurityPolicy: isProduction ? undefined : false,
     crossOriginEmbedderPolicy: false
-}));
-app.use(cors(corsOptions));
+}) as any);
+app.use(cors(corsOptions) as any);
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: false, limit: '100kb' }));
 
@@ -73,7 +73,7 @@ const authLimiter = rateLimit({
     message: { error: 'Too many authentication attempts. Please try again later.' }
 });
 
-app.use(generalLimiter);
+app.use(generalLimiter as any);
 
 app.get('/health', (_req: Request, res: Response) => {
     res.status(200).json({ status: 'ok', service: 'ngo-api' });
@@ -84,7 +84,7 @@ app.get('/ready', (_req: Request, res: Response) => {
     res.status(ready ? 200 : 503).json({ status: ready ? 'ready' : 'not_ready' });
 });
 
-app.post('/api/admin/reports/:reportType', authLimiter, authMiddleware, adminMiddleware, async (req: AuthRequest, res: Response) => {
+app.post('/api/admin/reports/:reportType', authLimiter as any, authMiddleware as any, adminMiddleware as any, async (req: AuthRequest, res: Response) => {
     try {
         const validTypes = new Set(['membership', 'donations', 'projects', 'beneficiaries', 'expenses', 'campaigns', 'income-expense']);
         const { reportType } = req.params;
@@ -111,7 +111,7 @@ const getContext = async ({ req }: any) => {
     }
 };
 
-app.use('/graphql', graphqlHTTP(async (req: any) => ({
+app.use('/graphql', (graphqlHTTP as any)(async (req: any) => ({
     schema: buildSchema(typeDefs),
     rootValue: flattenedResolvers,
     context: await getContext({ req }),
