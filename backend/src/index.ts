@@ -3,14 +3,10 @@ import dotenv from 'dotenv';
 import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
-import { graphqlHTTP } from 'express-graphql';
-import { buildSchema } from 'graphql';
+import cookieParser from 'cookie-parser';
 import { connectDB } from './connection/db';
-import { typeDefs } from './graphql/typeDefs';
-import { flattenedResolvers } from './graphql/resolvers';
-import { verifyToken } from './utils/auth';
-import { UserModel } from './schema/user';
-import { authMiddleware, adminMiddleware, getAuthToken, AuthRequest } from './middleware/auth';
+import { authMiddleware, adminMiddleware } from './middleware/auth';
+import { apiRouter } from './routes/api';
 import mongoose from 'mongoose';
 
 dotenv.config();
@@ -47,12 +43,9 @@ const corsOptions = {
 const app: Express = express();
 app.disable('x-powered-by');
 app.set('trust proxy', 1);
-
-app.use(helmet({
-    contentSecurityPolicy: isProduction ? undefined : false,
-    crossOriginEmbedderPolicy: false
-}) as any);
+app.use(helmet({ contentSecurityPolicy: isProduction ? undefined : false, crossOriginEmbedderPolicy: false }) as any);
 app.use(cors(corsOptions) as any);
+app.use(cookieParser());
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: false, limit: '100kb' }));
 
@@ -65,7 +58,7 @@ const generalLimiter = rateLimit({
 });
 
 const authLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000,
+    windowMs: 15 * 15 * 1000,
     limit: 10,
     standardHeaders: 'draft-7',
     legacyHeaders: false,
@@ -74,57 +67,29 @@ const authLimiter = rateLimit({
 });
 
 app.use(generalLimiter as any);
-
-app.get('/health', (_req: Request, res: Response) => {
-    res.status(200).json({ status: 'ok', service: 'ngo-api' });
-});
-
+app.get('/health', (_req: Request, res: Response) => res.status(200).json({ status: 'ok', service: 'ngo-api' }));
 app.get('/ready', (_req: Request, res: Response) => {
     const ready = mongoose.connection.readyState === 1;
     res.status(ready ? 200 : 503).json({ status: ready ? 'ready' : 'not_ready' });
 });
 
-app.post('/api/admin/reports/:reportType', authLimiter as any, authMiddleware as any, adminMiddleware as any, async (req: AuthRequest, res: Response) => {
-    try {
-        const validTypes = new Set(['membership', 'donations', 'projects', 'beneficiaries', 'expenses', 'campaigns', 'income-expense']);
-        const { reportType } = req.params;
-        if (!validTypes.has(reportType)) return res.status(400).json({ error: 'Invalid report type' });
-        return res.status(501).json({ error: 'Report generation is not available yet' });
-    } catch (_error) {
-        console.error('Report generation failed');
-        return res.status(500).json({ error: 'Failed to generate report' });
-    }
+// Rate-limit authentication endpoints before they reach the router.
+app.use('/api/auth/login', authLimiter as any);
+app.use('/api/auth/register', authLimiter as any);
+
+// Public and authenticated REST API.
+app.use('/api', apiRouter);
+
+// Enforce authentication for sensitive API paths. Public content remains public.
+const protectedPath = /^\/(users|donations\/user|memberships\/[^/]+|events\/[^/]+\/register|internships\/[^/]+\/apply)/;
+app.use('/api', (req: any, res: Response, next: any) => {
+    if (protectedPath.test(req.path)) return authMiddleware(req, res, next);
+    next();
 });
 
-const getContext = async ({ req }: any) => {
-    const token = getAuthToken(req);
-    const res = req.res;
-    if (!token) return { req, res };
-
-    try {
-        const decoded = verifyToken(token);
-        const user = await UserModel.findById(decoded.userId).select('-password');
-        if (!user) return { req, res };
-        return { userId: decoded.userId, user, req, res };
-    } catch (_error) {
-        return { req, res };
-    }
-};
-
-app.use('/graphql', (graphqlHTTP as any)(async (req: any) => ({
-    schema: buildSchema(typeDefs),
-    rootValue: flattenedResolvers,
-    context: await getContext({ req }),
-    graphiql: !isProduction && process.env.ENABLE_GRAPHIQL === 'true',
-    customFormatErrorFn: (error: any) => {
-        console.error('GraphQL request failed', { path: error.path, message: error.message });
-        return {
-            message: isProduction ? 'Request could not be completed' : error.message,
-            locations: error.locations,
-            path: error.path
-        };
-    }
-})));
+// Admin endpoints are mounted through the existing REST router under /api/admin.
+// The router itself exposes only admin operations at those paths; enforce RBAC here.
+app.use('/api/admin', authMiddleware as any, adminMiddleware as any);
 
 app.use((err: any, _req: Request, res: Response, _next: any) => {
     console.error('Unhandled HTTP error', err?.message || 'unknown error');
