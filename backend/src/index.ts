@@ -84,15 +84,11 @@ app.get('/ready', (_req: Request, res: Response) => {
     res.status(ready ? 200 : 503).json({ status: ready ? 'ready' : 'not_ready' });
 });
 
-// Admin reports: authentication AND authorization are enforced server-side.
 app.post('/api/admin/reports/:reportType', authLimiter, authMiddleware, adminMiddleware, async (req: AuthRequest, res: Response) => {
     try {
         const validTypes = new Set(['membership', 'donations', 'projects', 'beneficiaries', 'expenses', 'campaigns', 'income-expense']);
         const { reportType } = req.params;
         if (!validTypes.has(reportType)) return res.status(400).json({ error: 'Invalid report type' });
-
-        // This endpoint is intentionally not pretending mock data is production data.
-        // Real report generation must be implemented against the authoritative models before launch.
         return res.status(501).json({ error: 'Report generation is not available yet' });
     } catch (_error) {
         console.error('Report generation failed');
@@ -100,8 +96,9 @@ app.post('/api/admin/reports/:reportType', authLimiter, authMiddleware, adminMid
     }
 });
 
-const getContext = async ({ req, res }: any) => {
+const getContext = async ({ req }: any) => {
     const token = getAuthToken(req);
+    const res = req.res;
     if (!token) return { req, res };
 
     try {
@@ -114,17 +111,13 @@ const getContext = async ({ req, res }: any) => {
     }
 };
 
-app.use('/graphql', graphqlHTTP(async (req: any, res: any) => ({
+app.use('/graphql', graphqlHTTP(async (req: any) => ({
     schema: buildSchema(typeDefs),
     rootValue: flattenedResolvers,
-    context: await getContext({ req, res }),
+    context: await getContext({ req }),
     graphiql: !isProduction && process.env.ENABLE_GRAPHIQL === 'true',
     customFormatErrorFn: (error: any) => {
-        console.error('GraphQL request failed', {
-            path: error.path,
-            message: error.message
-        });
-
+        console.error('GraphQL request failed', { path: error.path, message: error.message });
         return {
             message: isProduction ? 'Request could not be completed' : error.message,
             locations: error.locations,
@@ -142,10 +135,8 @@ app.use((err: any, _req: Request, res: Response, _next: any) => {
 async function start() {
     try {
         await connectDB();
-        app.listen(PORT, () => {
-            console.log(`NGO API listening on port ${PORT}`);
-        });
-    } catch (err) {
+        app.listen(PORT, () => console.log(`NGO API listening on port ${PORT}`));
+    } catch (_err) {
         console.error('Error starting server');
         process.exit(1);
     }
