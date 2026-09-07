@@ -1,154 +1,47 @@
 import React, { useState } from 'react';
-import { useForm } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useToast } from '@/components/ui/use-toast';
-import { gql } from '@/lib/graphqlClient';
+import { useForm } from 'react-hook-form';
+import { enquiryAPI } from '@/lib/apiClient';
 
-interface EnquiryFormData {
-    name: string;
-    email: string;
-    phone: string;
-    subject: string;
-    message: string;
-}
+interface EnquiryFormData { name: string; email: string; phone: string; subject: string; message: string; }
 
 export default function Enquiry() {
-    const form = useForm<EnquiryFormData>();
+    const form = useForm<EnquiryFormData>({ defaultValues: { name: '', email: '', phone: '', subject: '', message: '' } });
     const { toast } = useToast();
     const [loading, setLoading] = useState(false);
 
     const onSubmit = async (data: EnquiryFormData) => {
         setLoading(true);
-        console.log('📝 Submitting enquiry form:', data);
         try {
-            const mutation = `
-                mutation SubmitEnquiry($name: String!, $email: String!, $phone: String!, $subject: String!, $message: String!) {
-                    submitEnquiry(name: $name, email: $email, phone: $phone, subject: $subject, message: $message) {
-                        success
-                        message
-                    }
-                }
-            `;
-
-            const result = await gql(mutation, data);
-            console.log('✅ Enquiry submitted successfully:', result);
-
-            if (result.submitEnquiry?.success) {
-                toast({
-                    title: 'Success',
-                    description: 'Your enquiry has been submitted successfully!',
-                });
+            const response = await enquiryAPI.submitEnquiry({ ...data, name: data.name.trim(), email: data.email.trim().toLowerCase(), phone: data.phone.trim(), subject: data.subject.trim(), message: data.message.trim() });
+            if (response.data?.success !== false) {
+                toast({ title: 'Success', description: 'Your enquiry has been submitted successfully!' });
                 form.reset();
             }
         } catch (error: any) {
-            console.error('❌ Error submitting enquiry:', error);
-            toast({
-                title: 'Error',
-                description: error.message || 'Failed to submit enquiry',
-                variant: 'destructive'
-            });
-        } finally {
-            setLoading(false);
-        }
+            toast({ title: 'Error', description: error.response?.data?.error || error.message || 'Failed to submit enquiry', variant: 'destructive' });
+        } finally { setLoading(false); }
     };
 
     return (
         <div className="min-h-screen bg-gray-50 py-12 px-4">
             <div className="max-w-2xl mx-auto">
                 <Card>
-                    <CardHeader>
-                        <CardTitle>Quick Enquiry</CardTitle>
-                        <CardDescription>Have a question? Get in touch with us</CardDescription>
-                    </CardHeader>
+                    <CardHeader><CardTitle>Quick Enquiry</CardTitle><CardDescription>Have a question? Get in touch with us</CardDescription></CardHeader>
                     <CardContent>
                         <Form {...form}>
                             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                                <FormField
-                                    control={form.control}
-                                    name="name"
-                                    rules={{ required: 'Name is required' }}
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Full Name</FormLabel>
-                                            <FormControl>
-                                                <Input placeholder="Your name" {...field} />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-
-                                <FormField
-                                    control={form.control}
-                                    name="email"
-                                    rules={{ required: 'Email is required', pattern: { value: /^[^\s@]+@[^\s@]+$/, message: 'Invalid email' } }}
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Email</FormLabel>
-                                            <FormControl>
-                                                <Input type="email" placeholder="your@email.com" {...field} />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-
-                                <FormField
-                                    control={form.control}
-                                    name="phone"
-                                    rules={{ required: 'Phone is required' }}
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Phone Number</FormLabel>
-                                            <FormControl>
-                                                <Input placeholder="+91 XXXXX XXXXX" {...field} />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-
-                                <FormField
-                                    control={form.control}
-                                    name="subject"
-                                    rules={{ required: 'Subject is required' }}
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Subject</FormLabel>
-                                            <FormControl>
-                                                <Input placeholder="What is this about?" {...field} />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-
-                                <FormField
-                                    control={form.control}
-                                    name="message"
-                                    rules={{ required: 'Message is required' }}
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Message</FormLabel>
-                                            <FormControl>
-                                                <Textarea
-                                                    placeholder="Tell us more about your enquiry..."
-                                                    className="min-h-32"
-                                                    {...field}
-                                                />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-
-                                <Button type="submit" disabled={loading} className="w-full">
-                                    {loading ? 'Submitting...' : 'Submit Enquiry'}
-                                </Button>
+                                <FormField control={form.control} name="name" rules={{ required: 'Name is required', minLength: { value: 2, message: 'Name is too short' } }} render={({ field }) => <FormItem><FormLabel>Full Name</FormLabel><FormControl><Input placeholder="Your name" {...field} /></FormControl><FormMessage /></FormItem>} />
+                                <FormField control={form.control} name="email" rules={{ required: 'Email is required' }} render={({ field }) => <FormItem><FormLabel>Email</FormLabel><FormControl><Input type="email" placeholder="you@example.com" {...field} /></FormControl><FormMessage /></FormItem>} />
+                                <FormField control={form.control} name="phone" render={({ field }) => <FormItem><FormLabel>Phone</FormLabel><FormControl><Input type="tel" placeholder="+91 XXXXX XXXXX" {...field} /></FormControl><FormMessage /></FormItem>} />
+                                <FormField control={form.control} name="subject" rules={{ required: 'Subject is required' }} render={({ field }) => <FormItem><FormLabel>Subject</FormLabel><FormControl><Input placeholder="Subject" {...field} /></FormControl><FormMessage /></FormItem>} />
+                                <FormField control={form.control} name="message" rules={{ required: 'Message is required', minLength: { value: 10, message: 'Message is too short' } }} render={({ field }) => <FormItem><FormLabel>Message</FormLabel><FormControl><Textarea rows={6} placeholder="Your message" {...field} /></FormControl><FormMessage /></FormItem>} />
+                                <Button type="submit" disabled={loading} className="w-full">{loading ? 'Sending...' : 'Send Enquiry'}</Button>
                             </form>
                         </Form>
                     </CardContent>
