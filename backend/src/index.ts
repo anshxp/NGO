@@ -11,6 +11,7 @@ import reportRouter from './routes/reports';
 import authRouter from './routes/auth';
 import { apiSecurity } from './middleware/apiSecurity';
 import { auditSensitiveRequest } from './middleware/audit';
+import { csrfOriginGuard } from './middleware/csrf';
 import mongoose from 'mongoose';
 
 dotenv.config();
@@ -33,6 +34,7 @@ app.use(generalLimiterHandler as any);
 app.get('/health', (_req: Request, res: Response) => res.status(200).json({ status: 'ok', service: 'ngo-api' }));
 app.get('/ready', (_req: Request, res: Response) => { const ready = mongoose.connection.readyState === 1; res.status(ready ? 200 : 503).json({ status: ready ? 'ready' : 'not_ready' }); });
 app.use('/api/auth/login', authLimiterHandler as any); app.use('/api/auth/register', authLimiterHandler as any);
+app.use('/api', csrfOriginGuard as any);
 app.use('/api/auth', authRouter as any);
 app.use('/api', apiSecurity as any);
 app.use('/api', auditSensitiveRequest as any);
