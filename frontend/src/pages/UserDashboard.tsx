@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
-import { donationAPI, membershipAPI } from '@/lib/apiClient';
+import { donationAPI } from '@/lib/apiClient';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { User, CreditCard, Gift, Award, Settings } from 'lucide-react';
@@ -12,31 +12,16 @@ export default function UserDashboard() {
     const { user, logout } = useAuth();
     const navigate = useNavigate();
     const [donations, setDonations] = useState<any[]>([]);
-    const [membership, setMembership] = useState<any>(null);
     const [loading, setLoading] = useState(true);
 
     const fetchUserData = useCallback(async () => {
         if (!user) return;
         try {
             setLoading(true);
-            const [donationResponse, membershipResponse] = await Promise.allSettled([
-                donationAPI.getUserDonations(),
-                membershipAPI.getMemberships()
-            ]);
-
-            if (donationResponse.status === 'fulfilled') {
-                const data = donationResponse.value.data;
-                const donationItems = data?.donations ?? data?.data ?? data ?? [];
-                setDonations(Array.isArray(donationItems) ? donationItems : []);
-            }
-
-            if (membershipResponse.status === 'fulfilled') {
-                const memberships = membershipResponse.value.data?.memberships ?? membershipResponse.value.data?.data ?? membershipResponse.value.data ?? [];
-                const ownMembership = Array.isArray(memberships)
-                    ? memberships.find((item: any) => String(item.userId?._id ?? item.userId) === String(user._id))
-                    : null;
-                setMembership(ownMembership);
-            }
+            const response = await donationAPI.getUserDonations();
+            const data = response.data;
+            const donationItems = data?.donations ?? data?.data ?? data ?? [];
+            setDonations(Array.isArray(donationItems) ? donationItems : []);
         } catch (error) {
             console.error('Error fetching dashboard data:', error);
         } finally {
@@ -50,6 +35,8 @@ export default function UserDashboard() {
 
     if (!user) return <div>Please log in</div>;
     if (loading) return <div className="min-h-screen bg-gray-50 p-8">Loading dashboard...</div>;
+
+    const hasMembership = Boolean(user.membershipStatus && user.membershipStatus !== 'pending');
 
     return (
         <div className="min-h-screen bg-gray-50 pb-12">
@@ -83,18 +70,15 @@ export default function UserDashboard() {
                             </CardContent>
                         </Card>
 
-                        {membership && (
+                        {hasMembership && (
                             <Card className="bg-gradient-to-br from-blue-500 to-blue-700 text-white border-none">
                                 <CardHeader><CardTitle className="text-lg">Membership Card</CardTitle></CardHeader>
                                 <CardContent>
                                     <div className="space-y-4">
                                         <div><p className="text-xs text-blue-100">Name</p><p className="font-semibold">{user.name}</p></div>
-                                        <div className="flex justify-between">
-                                            <div><p className="text-xs text-blue-100">Member ID</p><p className="font-mono text-sm">{membership.memberId || '—'}</p></div>
-                                            <div><p className="text-xs text-blue-100">Status</p><p className="text-sm">{membership.membershipStatus || '—'}</p></div>
-                                        </div>
+                                        <div><p className="text-xs text-blue-100">Membership status</p><p className="text-sm">{user.membershipStatus}</p></div>
                                         <div className="pt-4 border-t border-blue-400">
-                                            <Badge variant="secondary" className="bg-green-400 text-green-900 border-none">{membership.membershipStatus || 'Active'}</Badge>
+                                            <Badge variant="secondary" className="bg-green-400 text-green-900 border-none">{user.membershipStatus}</Badge>
                                         </div>
                                     </div>
                                 </CardContent>
