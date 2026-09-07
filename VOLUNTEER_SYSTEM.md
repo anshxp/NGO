@@ -1,262 +1,80 @@
-# Volunteer Registration System - Complete Implementation
+# Volunteer Management System
 
 ## Overview
-Created a comprehensive volunteer management system for the NGO, allowing admins to register, track, and manage volunteers with detailed profiles and activity tracking.
 
-## Backend Implementation
+The NGO management system provides administrative volunteer registration and lifecycle management through the REST API.
 
-### 1. Volunteer Schema (`backend/src/schema/volunteer.ts`)
-- **Fields**: Name, email, phone, address, skills, experience, availability, hours tracking
-- **Status Options**: active, inactive, suspended, completed
-- **Special Features**: 
-  - Background verification tracking
-  - Emergency contact information
-  - Skills and areas of interest (arrays)
-  - Total hours tracking for volunteer activity
+## Backend
 
-### 2. GraphQL Type Definitions (`backend/src/graphql/typeDefs/volunteerTypeDefs.ts`)
+The volunteer data model is `backend/src/schema/volunteer.ts`.
 
-**Queries:**
-- `getAllVolunteers()` - Fetch all volunteers (admin only)
-- `getVolunteerById(id)` - Get specific volunteer details
-- `getActiveVolunteers()` - Get only active volunteers
-- `getVolunteersBySkill(skill)` - Filter by specific skill
-- `getVolunteersByAvailability(availability)` - Filter by availability
+Administrative endpoints are exposed under `/api/admin/volunteers`:
 
-**Mutations:**
-- `registerVolunteer(...)` - Register a new volunteer
-- `updateVolunteerStatus(volunteerId, status)` - Change volunteer status
-- `updateVolunteerHours(volunteerId, hours)` - Add volunteer hours
-- `assignTaskToVolunteer(volunteerId, taskId)` - Assign tasks
-- `verifyVolunteerBackground(volunteerId, verified)` - Verify background
-- `deleteVolunteer(volunteerId)` - Remove volunteer record
-
-### 3. GraphQL Resolvers (`backend/src/graphql/resolvers/volunteerResolvers.ts`)
-- All resolvers include comprehensive logging
-- Authorization checks for admin-only operations
-- Automatic volunteer ID generation (VOL-{timestamp}-{random})
-- Full error handling with descriptive messages
-
-## Frontend Implementation
-
-### 1. Admin Volunteers Page (`frontend/src/pages/AdminVolunteers.tsx`)
-
-**Features:**
-- View all registered volunteers
-- Register new volunteers with comprehensive form
-- Update volunteer status (active/inactive/suspended/completed)
-- Filter volunteers and track volunteer hours
-- Display volunteer information cards with:
-  - Name, email, phone
-  - Skills and areas of interest
-  - Volunteer ID and joining date
-  - Total hours logged
-  - Background verification status
-  - Current status with visual indicators
-
-**Form Fields:**
-```
-Personal Information:
-- Full Name, Email, Phone
-- Date of Birth, Gender
-- Address, City, State, Pincode
-
-Professional Information:
-- Education
-- Skills (comma-separated)
-- Work Experience
-- Areas of Interest (comma-separated)
-- Availability (fulltime/parttime/weekends/flexible)
-
-Emergency Contact:
-- Contact Name
-- Contact Phone
-- Relationship
+```text
+GET    /api/admin/volunteers
+POST   /api/admin/volunteers
+PATCH  /api/admin/volunteers/:id/status
+PATCH  /api/admin/volunteers/:id/hours
+PATCH  /api/admin/volunteers/:id/background
+POST   /api/admin/volunteers/:id/tasks
+DELETE /api/admin/volunteers/:id
 ```
 
-### 2. Admin Layout Component (`frontend/src/components/AdminLayout.tsx`)
-- Sidebar navigation with active route highlighting
-- Links to all admin sections:
-  - Dashboard
-  - Volunteers (NEW)
-  - Enquiries
-  - Messages
-  - Beneficiaries
-  - News
-  - Receipts
-  - Reports
-- Logout button
-- Professional dark sidebar with blue accent
+These routes require authentication and administrator authorization through the existing Express middleware.
 
-### 3. Route Configuration (`frontend/src/App.tsx`)
-```tsx
-<Route path="/admin/volunteers" element={
-    <ProtectedRoute>
-        <AdminVolunteers />
-    </ProtectedRoute>
-} />
-```
+## Registration payload
 
-## Access & Security
-
-**Who can access:**
-- Admin role only (checked via JWT token)
-- Protected routes ensure authentication
-
-**Demo Login:**
-- Email: `admin@test.com`
-- Password: `Admin@123`
-
-**Navigation:**
-1. Go to http://localhost:8080/login
-2. Login with admin credentials
-3. Click "Admin" in navigation or go to http://localhost:8080/admin/volunteers
-4. Register and manage volunteers
-
-## GraphQL API Examples
-
-### Register a Volunteer
-```graphql
-mutation RegisterVolunteer {
-  registerVolunteer(
-    name: "John Doe"
-    email: "john@example.com"
-    phone: "9876543210"
-    address: "123 Main St"
-    city: "Mumbai"
-    state: "Maharashtra"
-    pincode: "400001"
-    dateOfBirth: "1990-05-15"
-    gender: "male"
-    skills: ["Teaching", "Counseling"]
-    areaOfInterest: ["Education", "Mental Health"]
-    availability: "weekends"
-    emergencyContactName: "Jane Doe"
-    emergencyContactPhone: "9876543211"
-    emergencyContactRelationship: "Sister"
-  ) {
-    _id
-    volunteerId
-    name
-    volunteerStatus
-  }
-}
-```
-
-### Fetch All Volunteers
-```graphql
-query {
-  getAllVolunteers {
-    _id
-    volunteerId
-    name
-    email
-    phone
-    skills
-    volunteerStatus
-    totalHours
-    backgroundVerified
-  }
-}
-```
-
-### Update Volunteer Status
-```graphql
-mutation {
-  updateVolunteerStatus(
-    volunteerId: "VOLUNTEER_ID"
-    status: "active"
-  ) {
-    _id
-    volunteerStatus
-  }
-}
-```
-
-## Database Collections
-
-### Volunteers Collection
-```
+```json
 {
-  volunteerId: "VOL-1701532800000-ABC123DEF",
-  userId: ObjectId,
-  name: String,
-  email: String,
-  phone: String,
-  address: String,
-  city: String,
-  state: String,
-  pincode: String,
-  dateOfBirth: Date,
-  gender: Enum,
-  education: String,
-  skills: [String],
-  experience: String,
-  areaOfInterest: [String],
-  availability: Enum,
-  volunteerStatus: Enum,
-  joiningDate: Date,
-  totalHours: Number,
-  assignedTasks: [ObjectId],
-  certifications: [String],
-  backgroundVerified: Boolean,
-  emergencyContact: {
-    name: String,
-    phone: String,
-    relationship: String
-  },
-  created_at: Date,
-  updated_at: Date
+  "name": "John Doe",
+  "email": "john@example.com",
+  "phone": "9876543210",
+  "address": "123 Main St",
+  "city": "Mumbai",
+  "state": "Maharashtra",
+  "pincode": "400001",
+  "dateOfBirth": "1990-05-15",
+  "gender": "male",
+  "education": "Bachelor's degree",
+  "skills": ["Teaching", "Counseling"],
+  "experience": "2 years",
+  "areaOfInterest": ["Education", "Community Development"],
+  "availability": "weekends",
+  "emergencyContactName": "Jane Doe",
+  "emergencyContactPhone": "9876543211",
+  "emergencyContactRelationship": "Sister"
 }
 ```
 
-## Integration Points
+The server generates the volunteer ID, initializes the volunteer status, joining date, hours and background verification state.
 
-1. **Backend GraphQL Endpoint**: `http://localhost:7856/graphql`
-2. **Frontend GraphQL Client**: Uses `gql()` function in `lib/graphqlClient.ts`
-3. **Authentication**: JWT tokens passed in Authorization header
-4. **Error Logging**: Detailed console logs for debugging
+## Frontend
 
-## Testing Checklist
+`frontend/src/pages/AdminVolunteers.tsx` uses `volunteerAPI` from `frontend/src/lib/apiClient.ts` for listing, registration and status updates.
 
-- [ ] Login to admin panel
-- [ ] Navigate to Volunteers section
-- [ ] Register a new volunteer with all fields
-- [ ] View list of volunteers
-- [ ] Update volunteer status
-- [ ] Check MongoDB for saved volunteer data
-- [ ] Test error handling with invalid data
-- [ ] Verify that non-admin users cannot access
+Authentication is cookie-based. The frontend does not need to construct or persist JWT Authorization headers manually.
 
-## Future Enhancements
+## Security
 
-1. **Volunteer Portal**: Self-registration for volunteers
-2. **Task Management**: Assign and track volunteer tasks
-3. **Hour Tracking**: Detailed time logs for each volunteer
-4. **Certificates**: Auto-generate volunteer certificates
-5. **Reports**: Volunteer activity and contribution reports
-6. **Analytics**: Volunteer demographics and trends
-7. **Email Notifications**: Automated welcome emails and updates
-8. **Export**: Download volunteer data as CSV/PDF
+- Admin-only routes are protected by Express authentication/authorization middleware.
+- Volunteer input is validated on the server.
+- Identifiers are validated before database operations.
+- Secrets are not accepted from the frontend for volunteer operations.
 
-## Files Modified/Created
+## Testing
 
-**Created:**
-- `/backend/src/schema/volunteer.ts`
-- `/backend/src/graphql/typeDefs/volunteerTypeDefs.ts`
-- `/backend/src/graphql/resolvers/volunteerResolvers.ts`
-- `/frontend/src/pages/AdminVolunteers.tsx`
-- `/frontend/src/components/AdminLayout.tsx`
+Run the frontend lint/build and backend typecheck/build commands before deployment. For a functional smoke test, create a volunteer through the admin page and verify the document appears in MongoDB and status changes persist after reload.
 
-**Modified:**
-- `/backend/src/graphql/resolvers/index.ts` - Added volunteer resolvers
-- `/backend/src/graphql/typeDefs/index.ts` - Added volunteer type defs
-- `/frontend/src/App.tsx` - Added admin volunteers route
-- `/frontend/src/pages/AdminDashboard.tsx` - Wrapped with AdminLayout
+## Architecture
 
-## Deployment Notes
-
-- Ensure MongoDB connection is working
-- Backend JWT_SECRET is set in environment
-- Frontend can access backend on configured API_URL
-- Admin user credentials are set in the system
+```text
+Admin React page
+      |
+      | REST / JSON
+      v
+Express /api/admin/volunteers
+      |
+      | Mongoose
+      v
+MongoDB
+```
