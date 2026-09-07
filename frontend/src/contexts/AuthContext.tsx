@@ -1,11 +1,13 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { gql } from '@/lib/graphqlClient';
+import { authAPI } from '@/lib/apiClient';
 
 interface User {
   _id: string;
   name: string;
   email: string;
   role: string;
+  phone?: string;
+  membershipStatus?: string;
 }
 
 interface AuthContextType {
@@ -23,58 +25,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const verifySession = async () => {
-    try {
-      const result = await gql<{ me: User | null }>('query { me { _id name email role } }');
-      setUser(result.me || null);
-    } catch (_error) {
-      setUser(null);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
-    void verifySession();
+    authAPI.getCurrentUser()
+      .then((response) => setUser(response.data?.user || null))
+      .catch(() => setUser(null))
+      .finally(() => setLoading(false));
   }, []);
 
   const login = async (email: string, password: string) => {
-    const mutation = `
-      mutation Login($input: LoginInput!) {
-        login(input: $input) {
-          token
-          user { _id name email role }
-        }
-      }
-    `;
-
-    const result = await gql<{ login: { token: string; user: User } }>(mutation, {
-      input: { email: email.trim().toLowerCase(), password }
-    });
-
-    if (!result?.login?.user) throw new Error('Invalid login response');
-    setUser(result.login.user);
+    const response = await authAPI.login(email.trim().toLowerCase(), password);
+    if (!response.data?.user) throw new Error('Invalid login response');
+    setUser(response.data.user);
   };
 
   const logout = async () => {
-    try {
-      await gql<{ logout: boolean }>('mutation { logout }');
-    } finally {
-      setUser(null);
-    }
+    try { await authAPI.logout(); } finally { setUser(null); }
   };
 
   return (
-    <AuthContext.Provider
-      value={{
-        user,
-        token: null,
-        loading,
-        login,
-        logout,
-        isAuthenticated: !!user,
-      }}
-    >
+    <AuthContext.Provider value={{ user, token: null, loading, login, logout, isAuthenticated: !!user }}>
       {children}
     </AuthContext.Provider>
   );
