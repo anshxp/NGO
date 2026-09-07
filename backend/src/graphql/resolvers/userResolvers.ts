@@ -3,14 +3,18 @@ import { generateToken, hashPassword, comparePassword, generateReferralCode, gen
 
 const setAuthCookie = (context: any, token: string) => {
     const res = context?.res;
-    if (!res?.cookie) return;
-    res.cookie('ngo_access_token', token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
-        maxAge: 15 * 60 * 1000,
-        path: '/'
-    });
+    if (!res?.setHeader) return;
+    const secure = process.env.NODE_ENV === 'production';
+    const sameSite = secure ? 'Strict' : 'Lax';
+    res.setHeader('Set-Cookie', `ngo_access_token=${encodeURIComponent(token)}; Max-Age=900; Path=/; HttpOnly; SameSite=${sameSite}${secure ? '; Secure' : ''}`);
+};
+
+const clearAuthCookie = (context: any) => {
+    const res = context?.res;
+    if (!res?.setHeader) return;
+    const secure = process.env.NODE_ENV === 'production';
+    const sameSite = secure ? 'Strict' : 'Lax';
+    res.setHeader('Set-Cookie', `ngo_access_token=; Max-Age=0; Path=/; HttpOnly; SameSite=${sameSite}${secure ? '; Secure' : ''}`);
 };
 
 export const userResolvers = {
@@ -27,8 +31,9 @@ export const userResolvers = {
             return await UserModel.findById(args.id).select('-password').populate('designation referredBy');
         },
         getUserByReferralCode: async (args: any) => {
-            const user = await UserModel.findOne({ referralCode: args.referralCode }).select('name referralCode membershipId designation membershipStatus').populate('designation');
-            return user;
+            return await UserModel.findOne({ referralCode: args.referralCode })
+                .select('name referralCode membershipId designation membershipStatus')
+                .populate('designation');
         },
         me: async (_args: any, context: any) => {
             if (!context.userId) throw new Error('Not authenticated');
@@ -75,21 +80,21 @@ export const userResolvers = {
         login: async ({ input }: any, context: any) => {
             const email = String(input.email).trim().toLowerCase();
             const user = await UserModel.findOne({ email });
-            if (!user || !(await comparePassword(input.password, user.password))) {
-                throw new Error('Invalid credentials');
-            }
+            if (!user || !(await comparePassword(input.password, user.password))) throw new Error('Invalid credentials');
 
             user.lastLogin = new Date();
             await user.save();
-
             const token = generateToken((user._id as any).toString());
             setAuthCookie(context, token);
             return { token, user };
         },
+        logout: async (_args: any, context: any) => {
+            clearAuthCookie(context);
+            return true;
+        },
         updateMembershipStatus: async (args: any, context: any) => {
             if (!context.userId || context.user.role !== 'admin') throw new Error('Unauthorized');
             if (!['active', 'inactive', 'pending'].includes(args.status)) throw new Error('Invalid membership status');
-
             const user = await UserModel.findById(args.userId);
             if (!user) throw new Error('User not found');
             user.membershipStatus = args.status;
