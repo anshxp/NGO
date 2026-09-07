@@ -13,7 +13,7 @@ interface AuthContextType {
   token: string | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
   isAuthenticated: boolean;
 }
 
@@ -21,93 +21,58 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Load token from localStorage on mount
-  useEffect(() => {
-    const savedToken = localStorage.getItem('authToken');
-    if (savedToken) {
-      setToken(savedToken);
-      // Verify token is still valid by fetching current user
-      verifyToken(savedToken);
-    } else {
-      setLoading(false);
-    }
-  }, []);
-
-  const verifyToken = async (authToken: string) => {
+  const verifySession = async () => {
     try {
-      const query = `query { me { _id name email role } }`;
-      const result = await gql(query, {}, authToken) as { me: User };
-      if (result.me) {
-        setUser(result.me);
-      } else {
-        localStorage.removeItem('authToken');
-        setToken(null);
-      }
-    } catch (error) {
-      console.error('Token verification failed:', error);
-      localStorage.removeItem('authToken');
-      setToken(null);
+      const result = await gql<{ me: User | null }>('query { me { _id name email role } }');
+      setUser(result.me || null);
+    } catch (_error) {
+      setUser(null);
     } finally {
       setLoading(false);
     }
   };
 
+  useEffect(() => {
+    void verifySession();
+  }, []);
+
   const login = async (email: string, password: string) => {
-    try {
-      console.log('🔐 Attempting login for:', email);
-      const mutation = `
-        mutation Login($input: LoginInput!) {
-          login(input: $input) {
-            token
-            user {
-              _id
-              name
-              email
-              role
-            }
-          }
+    const mutation = `
+      mutation Login($input: LoginInput!) {
+        login(input: $input) {
+          token
+          user { _id name email role }
         }
-      `;
-
-      const result = await gql(mutation, { input: { email, password } }) as { login: { token: string; user: User } };
-      console.log('✅ GraphQL response:', result);
-
-      if (result?.login?.token && result?.login?.user) {
-        const authToken = result.login.token;
-        console.log('✅ Login successful, setting token');
-        setToken(authToken);
-        setUser(result.login.user);
-        localStorage.setItem('authToken', authToken);
-        console.log('✅ Auth state updated');
-      } else {
-        console.error('❌ Invalid response structure:', result);
-        throw new Error('Invalid login response');
       }
-    } catch (error) {
-      console.error('❌ Login failed:', error);
-      throw error;
-    }
+    `;
+
+    const result = await gql<{ login: { token: string; user: User } }>(mutation, {
+      input: { email: email.trim().toLowerCase(), password }
+    });
+
+    if (!result?.login?.user) throw new Error('Invalid login response');
+    setUser(result.login.user);
   };
 
-  const logout = () => {
-    console.log('🚪 Logging out');
-    setUser(null);
-    setToken(null);
-    localStorage.removeItem('authToken');
+  const logout = async () => {
+    try {
+      await gql<{ logout: boolean }>('mutation { logout }');
+    } finally {
+      setUser(null);
+    }
   };
 
   return (
     <AuthContext.Provider
       value={{
         user,
-        token,
+        token: null,
         loading,
         login,
         logout,
-        isAuthenticated: !!user && !!token,
+        isAuthenticated: !!user,
       }}
     >
       {children}
@@ -117,8 +82,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within AuthProvider');
-  }
+  if (context === undefined) throw new Error('useAuth must be used within AuthProvider');
   return context;
 };
