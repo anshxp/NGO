@@ -6,6 +6,7 @@ import rateLimit from 'express-rate-limit';
 import cookieParser from 'cookie-parser';
 import { connectDB } from './connection/db';
 import { apiRouter } from './routes/api';
+import adminRouter from './routes/admin';
 import { apiSecurity } from './middleware/apiSecurity';
 import mongoose from 'mongoose';
 
@@ -13,13 +14,11 @@ dotenv.config();
 
 const isProduction = process.env.NODE_ENV === 'production';
 const PORT = Number(process.env.PORT || 7856);
-
 if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) throw new Error('JWT_SECRET must be configured and at least 32 characters long');
 if (isProduction && !process.env.FRONTEND_URL) throw new Error('FRONTEND_URL must be configured in production');
 
 const allowedOrigins = (process.env.FRONTEND_URL || '').split(',').map((origin) => origin.trim()).filter(Boolean);
 if (!isProduction) allowedOrigins.push('http://localhost:5173', 'http://localhost:8080', 'http://127.0.0.1:5173', 'http://127.0.0.1:8080');
-
 const corsOptions = {
     origin: (origin: string | undefined, callback: (error: Error | null, allow?: boolean) => void) => {
         if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
@@ -43,15 +42,12 @@ const generalLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 300, standar
 const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 10, standardHeaders: 'draft-7', legacyHeaders: false, skipSuccessfulRequests: true, message: { error: 'Too many authentication attempts. Please try again later.' } });
 app.use(generalLimiter as any);
 app.get('/health', (_req: Request, res: Response) => res.status(200).json({ status: 'ok', service: 'ngo-api' }));
-app.get('/ready', (_req: Request, res: Response) => {
-    const ready = mongoose.connection.readyState === 1;
-    res.status(ready ? 200 : 503).json({ status: ready ? 'ready' : 'not_ready' });
-});
+app.get('/ready', (_req: Request, res: Response) => { const ready = mongoose.connection.readyState === 1; res.status(ready ? 200 : 503).json({ status: ready ? 'ready' : 'not_ready' }); });
 app.use('/api/auth/login', authLimiter as any);
 app.use('/api/auth/register', authLimiter as any);
 
-// All API authorization decisions happen before business routes.
 app.use('/api', apiSecurity);
+app.use('/api/admin', adminRouter);
 app.use('/api', apiRouter);
 
 app.use((err: any, _req: Request, res: Response, _next: any) => {
@@ -69,5 +65,4 @@ async function start() {
         process.exit(1);
     }
 }
-
 start();
