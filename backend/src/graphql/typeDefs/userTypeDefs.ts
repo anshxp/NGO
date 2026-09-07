@@ -63,6 +63,7 @@ export const userTypeDefs = `
     extend type Mutation {
         register(input: RegisterInput!): AuthPayload!
         login(input: LoginInput!): AuthPayload!
+        logout: Boolean!
         updateMembershipStatus(userId: ID!, status: String!): User!
         generateMembershipId(userId: ID!): User!
         payMembershipFee(designationId: ID): MembershipPaymentOrder!
