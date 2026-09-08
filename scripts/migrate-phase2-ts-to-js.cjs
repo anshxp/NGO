@@ -1,13 +1,19 @@
 const fs = require('fs');
 const path = require('path');
 
-// Load the compiler from an explicit path when provided, otherwise resolve it
-// normally. CI installs the compiler in a temporary directory so migration
-// tooling never contaminates the application dependency tree.
+// Load the compiler from an explicit package directory when provided. CI
+// installs TypeScript outside the application dependency tree, so resolve the
+// compiler entrypoint directly instead of relying on package-directory
+// resolution behavior.
 let ts;
 try {
   const compilerPath = process.env.TS_COMPILER_PATH;
-  ts = compilerPath ? require(compilerPath) : require('typescript');
+  if (compilerPath) {
+    const compilerEntry = path.join(compilerPath, 'lib', 'typescript.js');
+    ts = require(compilerEntry);
+  } else {
+    ts = require('typescript');
+  }
 } catch (error) {
   console.error('Unable to load the TypeScript compiler.');
   console.error(error.message);
