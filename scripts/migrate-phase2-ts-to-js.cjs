@@ -4,17 +4,16 @@ const path = require('path');
 let ts;
 try {
   const compilerPath = process.env.TS_COMPILER_PATH;
-  ts = compilerPath ? require(compilerPath) : require('typescript');
+  ts = compilerPath
+    ? require(path.join(compilerPath, 'lib', 'typescript.js'))
+    : require('typescript');
 } catch (error) {
   console.error('Unable to load the TypeScript compiler.');
   console.error(error.message);
   process.exit(1);
 }
 
-const roots = [
-  path.join(process.cwd(), 'backend', 'src'),
-  path.join(process.cwd(), 'frontend', 'src')
-];
+const roots = [path.join(process.cwd(), 'backend', 'src'), path.join(process.cwd(), 'frontend', 'src')];
 const migrated = [];
 const removed = [];
 
@@ -43,13 +42,11 @@ for (const root of roots) {
     const ext = path.extname(source);
     const base = source.slice(0, -ext.length);
     const target = ext === '.tsx' ? `${base}.jsx` : `${base}.js`;
-
     if (fs.existsSync(target)) {
       fs.rmSync(source);
       removed.push(path.relative(process.cwd(), source));
       continue;
     }
-
     const input = fs.readFileSync(source, 'utf8');
     const result = ts.transpileModule(input, {
       fileName: source,
@@ -63,7 +60,6 @@ for (const root of roots) {
         removeComments: false
       }
     });
-
     fs.writeFileSync(target, result.outputText, 'utf8');
     fs.rmSync(source);
     migrated.push(`${path.relative(process.cwd(), source)} -> ${path.relative(process.cwd(), target)}`);
@@ -86,5 +82,3 @@ if (fs.existsSync(backendTsconfig)) fs.rmSync(backendTsconfig);
 
 console.log(`Converted ${migrated.length} TypeScript source files.`);
 console.log(`Removed ${removed.length} obsolete duplicate TypeScript files.`);
-for (const item of migrated) console.log(`MIGRATED ${item}`);
-for (const item of removed) console.log(`REMOVED ${item}`);
