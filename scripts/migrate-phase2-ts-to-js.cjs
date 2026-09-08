@@ -1,19 +1,10 @@
 const fs = require('fs');
 const path = require('path');
 
-// Load the compiler from an explicit package directory when provided. CI
-// installs TypeScript outside the application dependency tree, so resolve the
-// compiler entrypoint directly instead of relying on package-directory
-// resolution behavior.
 let ts;
 try {
   const compilerPath = process.env.TS_COMPILER_PATH;
-  if (compilerPath) {
-    const compilerEntry = path.join(compilerPath, 'lib', 'typescript.js');
-    ts = require(compilerEntry);
-  } else {
-    ts = require('typescript');
-  }
+  ts = compilerPath ? require(compilerPath) : require('typescript');
 } catch (error) {
   console.error('Unable to load the TypeScript compiler.');
   console.error(error.message);
@@ -66,7 +57,7 @@ for (const root of roots) {
         target: ts.ScriptTarget.ES2022,
         module: ts.ModuleKind.ESNext,
         moduleResolution: ts.ModuleResolutionKind.Bundler,
-        jsx: ts.JsxEmit.Preserve,
+        jsx: ts.JsxEmit.ReactJSX,
         esModuleInterop: true,
         sourceMap: false,
         removeComments: false
