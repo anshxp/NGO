@@ -24,7 +24,7 @@ jobs:
           npm init -y >/dev/null 2>&1
           npm install --no-package-lock typescript
       - name: Resolve compiler
-        run: echo "TS_COMPILER_PATH=$RUNNER_TEMP/phase2-ts/node_modules/typescript/lib/typescript.js" >> "$GITHUB_ENV"
+        run: echo "TS_COMPILER_PATH=$RUNNER_TEMP/phase2-ts/node_modules/typescript" >> "$GITHUB_ENV"
       - name: Convert remaining TypeScript source to JavaScript
         run: node scripts/migrate-phase2-ts-to-js.cjs
       - name: Verify no TypeScript application source remains
