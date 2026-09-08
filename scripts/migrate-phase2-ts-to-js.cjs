@@ -1,15 +1,16 @@
 const fs = require('fs');
 const path = require('path');
 
-// Phase 2 installs the compiler in frontend/node_modules because the root of
-// this repository intentionally has no application package.json. Resolve it
-// explicitly instead of relying on Node's module search path.
-const typescriptPath = path.join(process.cwd(), 'frontend', 'node_modules', 'typescript');
+// Phase 2 installs TypeScript in the frontend project. Resolve it using
+// Node's normal package lookup rooted at frontend so npm layout changes do
+// not break the migration script.
 let ts;
 try {
-  ts = require(typescriptPath);
+  const frontendRoot = path.join(process.cwd(), 'frontend');
+  const typescriptEntry = require.resolve('typescript', { paths: [frontendRoot] });
+  ts = require(typescriptEntry);
 } catch (error) {
-  console.error(`Unable to load TypeScript compiler from ${typescriptPath}`);
+  console.error('Unable to load the TypeScript compiler from the frontend project.');
   console.error(error.message);
   process.exit(1);
 }
