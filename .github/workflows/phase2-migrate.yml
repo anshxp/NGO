@@ -1,0 +1,50 @@
+name: Complete Phase 2 JavaScript Migration
+
+on:
+  push:
+    branches: [production-hardening]
+
+permissions:
+  contents: write
+
+jobs:
+  migrate:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: production-hardening
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install migration compiler
+        working-directory: frontend
+        run: npm install --no-save typescript
+      - name: Convert remaining TypeScript source to JavaScript
+        run: node scripts/migrate-phase2-ts-to-js.cjs
+      - name: Verify no TypeScript application source remains
+        shell: bash
+        run: |
+          if find backend/src frontend/src -type f \( -name '*.ts' -o -name '*.tsx' \) -print -quit | grep -q .; then
+            echo 'TypeScript application source remains after migration.'
+            find backend/src frontend/src -type f \( -name '*.ts' -o -name '*.tsx' \)
+            exit 1
+          fi
+      - name: Remove one-time migration tooling
+        run: |
+          rm -f scripts/migrate-phase2-ts-to-js.cjs
+          rm -f .github/workflows/phase2-migrate.yml
+      - name: Commit Phase 2 completion
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          if git diff --cached --quiet; then
+            echo 'No migration changes were produced.'
+            exit 1
+          fi
+          git commit -m 'feat: complete phase 2 javascript migration'
+          git push origin HEAD:production-hardening
