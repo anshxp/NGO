@@ -17,12 +17,14 @@ jobs:
       - name: Verify repository hygiene
         shell: bash
         run: |
-          if git ls-files | grep -E '(^|/)(node_modules|dist)/'; then
-            echo "Tracked dependency/build artifacts detected. Remove them from Git."
+          if find . -type d \( -name node_modules -o -name dist \) -not -path './.git/*' -print -quit | grep -q .; then
+            echo "Dependency/build artifacts detected in the checkout."
             exit 1
           fi
-          if git ls-files | grep -E '^(frontend/src/.*\.(ts|tsx)$|backend/src/.*\.ts$)'; then
-            echo "TypeScript application source detected after the JavaScript migration."
+
+          if find frontend/src backend/src -type f \( -name '*.ts' -o -name '*.tsx' \) -print -quit 2>/dev/null | grep -q .; then
+            echo "TypeScript application source detected after the JavaScript migration:"
+            find frontend/src backend/src -type f \( -name '*.ts' -o -name '*.tsx' \) -print
             exit 1
           fi
 
