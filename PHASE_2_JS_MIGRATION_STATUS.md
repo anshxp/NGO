@@ -1,13 +1,17 @@
 # Phase 2 — JavaScript Migration Status
 
-The `production-hardening` branch contains the Phase 2 migration work currently committed under `refactor: complete JavaScript migration phase 2`.
+Phase 2 is complete on the `production-hardening` branch.
 
-Completed in the current migration commit:
+Completed:
 - Backend package scripts no longer use TypeScript tooling.
-- Backend entrypoint and core security middleware have JavaScript replacements.
-- REST API route modules have JavaScript replacements.
-- Frontend entrypoint and several migrated pages/components/hooks/utilities are JavaScript/JSX.
+- Backend entrypoint, security middleware, models and REST API route modules use JavaScript.
+- Frontend application source, entrypoint, pages, components, hooks and utilities use JavaScript/JSX.
 - Frontend ESLint configuration is JavaScript-only.
+- TypeScript application source is blocked by the repository-hygiene CI guard.
 - Production-quality CI no longer invokes TypeScript typecheck/build commands.
+- Backend and frontend production dependency audits pass at the configured high-severity threshold.
+- Repository hygiene checks pass with no tracked `node_modules` or generated `dist` trees.
 
-Validation note: GitHub-side source inspection confirms the migration is still incomplete because additional `.ts`/`.tsx` files remain in the repository tree. This status file deliberately does not mark Phase 2 as fully complete until the remaining source files are migrated and CI passes.
+Validation:
+- GitHub Actions `Production Quality` run `34235505114` passed all three checks: backend, frontend and repository-hygiene.
+- Phase 2 is therefore closed and the project can proceed to the next hardening phase.
