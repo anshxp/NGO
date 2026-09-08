@@ -62,6 +62,31 @@ for (const root of roots) {
   }
 }
 
+// After source files have been renamed, update explicit TypeScript extensions
+// in all application source imports. Vite/Node can resolve extensionless JS,
+// but explicit .ts/.tsx references would otherwise point at files that no
+// longer exist.
+for (const root of roots) {
+  for (const file of walkAll(root)) {
+    if (!/\.(js|jsx|mjs|cjs)$/.test(file)) continue;
+    let source = fs.readFileSync(file, 'utf8');
+    const updated = source
+      .replace(/(["'`])([^"'`\n]+)\.tsx\1/g, '$1$2.jsx$1')
+      .replace(/(["'`])([^"'`\n]+)\.ts\1/g, '$1$2.js$1');
+    if (updated !== source) fs.writeFileSync(file, updated, 'utf8');
+  }
+}
+
+function walkAll(dir) {
+  const out = [];
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) out.push(...walkAll(full));
+    else out.push(full);
+  }
+  return out;
+}
+
 const tsconfig = path.join(process.cwd(), 'backend', 'tsconfig.json');
 if (fs.existsSync(tsconfig)) fs.rmSync(tsconfig);
 
