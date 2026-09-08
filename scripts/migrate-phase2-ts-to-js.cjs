@@ -1,14 +1,15 @@
 const fs = require('fs');
 const path = require('path');
 
-// Load the compiler from the frontend workspace explicitly. This avoids
-// NODE_PATH/module-resolution differences between GitHub Actions runners.
-const frontendRoot = path.join(process.cwd(), 'frontend');
+// Load the compiler from an explicit path when provided, otherwise resolve it
+// normally. CI installs the compiler in a temporary directory so migration
+// tooling never contaminates the application dependency tree.
 let ts;
 try {
-  ts = require(path.join(frontendRoot, 'node_modules', 'typescript'));
+  const compilerPath = process.env.TS_COMPILER_PATH;
+  ts = compilerPath ? require(compilerPath) : require('typescript');
 } catch (error) {
-  console.error('Unable to load the TypeScript compiler from frontend/node_modules.');
+  console.error('Unable to load the TypeScript compiler.');
   console.error(error.message);
   process.exit(1);
 }
@@ -46,8 +47,6 @@ for (const root of roots) {
     const base = source.slice(0, -ext.length);
     const target = ext === '.tsx' ? `${base}.jsx` : `${base}.js`;
 
-    // A JavaScript/JSX equivalent already exists. Keep the existing runtime
-    // implementation and remove only the obsolete TypeScript duplicate.
     if (fs.existsSync(target)) {
       fs.rmSync(source);
       removed.push(path.relative(process.cwd(), source));
@@ -74,7 +73,6 @@ for (const root of roots) {
   }
 }
 
-// Rewrite explicit TypeScript extensions after all files have been renamed.
 for (const root of roots) {
   for (const file of walkAll(root)) {
     if (!/\.(js|jsx|mjs|cjs)$/.test(file)) continue;
@@ -86,9 +84,6 @@ for (const root of roots) {
   }
 }
 
-// Remove TypeScript project configuration that only supported the old backend
-// build. Frontend configuration is intentionally retained until its tooling
-// is independently migrated.
 const backendTsconfig = path.join(process.cwd(), 'backend', 'tsconfig.json');
 if (fs.existsSync(backendTsconfig)) fs.rmSync(backendTsconfig);
 
