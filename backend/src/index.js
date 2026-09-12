@@ -24,7 +24,12 @@ if (!isProduction) allowedOrigins.push('http://localhost:5173', 'http://localhos
 const corsOptions = { origin: (origin, callback) => { if (!origin || allowedOrigins.includes(origin)) return callback(null, true); return callback(new Error('CORS origin denied')); }, credentials: true, methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'], allowedHeaders: ['Content-Type', 'Authorization'] };
 const app = express();
 app.disable('x-powered-by');
-app.set('trust proxy', 1);
+const trustProxy = process.env.TRUST_PROXY?.trim();
+if (trustProxy) {
+  if (/^\d+$/.test(trustProxy)) app.set('trust proxy', Number(trustProxy));
+  else if (['true', 'false'].includes(trustProxy.toLowerCase())) app.set('trust proxy', trustProxy.toLowerCase() === 'true');
+  else app.set('trust proxy', trustProxy.split(',').map((value) => value.trim()).filter(Boolean));
+}
 app.use(helmet({ contentSecurityPolicy: isProduction ? undefined : false, crossOriginEmbedderPolicy: false }));
 app.use(cors(corsOptions));
 app.use(cookieParser());
@@ -33,6 +38,7 @@ app.use(express.urlencoded({ extended: false, limit: '100kb' }));
 const generalLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 300, standardHeaders: 'draft-7', legacyHeaders: false, message: { error: 'Too many requests. Please try again later.' } });
 const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 10, standardHeaders: 'draft-7', legacyHeaders: false, skipSuccessfulRequests: true, message: { error: 'Too many authentication attempts. Please try again later.' } });
 app.use(generalLimiter);
+app.use((req, res, next) => { req.setTimeout(30_000); res.setTimeout(30_000); next(); });
 app.get('/health', (_req, res) => res.status(200).json({ status: 'ok', service: 'ngo-api' }));
 app.get('/ready', (_req, res) => { const ready = mongoose.connection.readyState === 1; res.status(ready ? 200 : 503).json({ status: ready ? 'ready' : 'not_ready' }); });
 app.use('/api/auth/login', authLimiter);
