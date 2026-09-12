@@ -1,505 +1,229 @@
 # Deployment Guide
 
-## Prerequisites
+This guide reflects the current production-hardening branch. The application uses React/Vite, Node.js/Express, MongoDB/Mongoose, REST/JSON APIs, and HttpOnly JWT cookies.
 
-- Git repository set up
-- Cloud provider account (Heroku, AWS, DigitalOcean, or Azure)
-- MongoDB Atlas account (for cloud database)
-- Payment gateway accounts configured
-- Email service configured (Gmail OAuth recommended)
+## 1. Production architecture
 
-## Backend Deployment
-
-### Option 1: Heroku
-
-#### Setup
-```bash
-# Install Heroku CLI
-npm install -g heroku
-
-# Login to Heroku
-heroku login
-
-# Create app
-heroku create ngo-backend
-
-# Set environment variables
-heroku config:set MONGODB_URI=mongodb+srv://user:pass@cluster.mongodb.net/ngo
-heroku config:set JWT_SECRET=your-secret-key
-heroku config:set JWT_EXPIRY=7d
-# Add all other environment variables...
-
-# Deploy
-git push heroku main
+```text
+Browser
+  |
+  | HTTPS
+  v
+React + Vite static frontend
+  |
+  | HTTPS REST/JSON + credentials
+  v
+Node.js 20 + Express API
+  |
+  | Mongoose
+  v
+MongoDB Atlas
 ```
 
-#### Procfile (create in backend root)
-```
-web: npm start
-```
+The frontend and backend may be deployed separately. If they share an origin/reverse proxy, the frontend can use the default `/api` base path. For separate deployments, configure `VITE_API_URL` to the public API origin.
 
-#### Start Script (package.json)
-```json
-"scripts": {
-  "dev": "tsx watch src/index.ts",
-  "build": "tsc",
-  "start": "node dist/index.js"
-}
-```
+## 2. Backend deployment
 
-### Option 2: DigitalOcean App Platform
+Use a Node.js hosting provider that supports Node.js 20.20.x or later within the project's declared major-version range.
 
-1. Connect GitHub repository
-2. Select backend folder as source
-3. Set environment variables
-4. Choose Node.js runtime
-5. Set build command: `npm install && npm run build`
-6. Set run command: `npm start`
-
-### Option 3: AWS EC2
+From `backend/`:
 
 ```bash
-# SSH into instance
-ssh -i key.pem ubuntu@your-instance-ip
-
-# Install Node.js
-curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
-sudo apt-get install -y nodejs
-
-# Clone repository
-git clone your-repo-url
-cd NGO/backend
-
-# Install dependencies
-npm install
-
-# Build
-npm run build
-
-# Install PM2 for process management
-sudo npm install -g pm2
-
-# Start application
-pm2 start "npm start" --name ngo-backend
-
-# Save PM2 config
-pm2 save
-
-# Setup auto-restart on reboot
-pm2 startup
+npm ci
+npm run check
+npm start
 ```
 
-### Option 4: Docker & Container
+The application listens on `PORT` (default `7856`). The production process is `node src/index.js`; there is no TypeScript compilation step.
 
-#### Dockerfile
-```dockerfile
-FROM node:18-alpine
+Expose these endpoints to your load balancer/monitoring system:
 
-WORKDIR /app
-
-COPY package*.json ./
-
-RUN npm install
-
-COPY . .
-
-RUN npm run build
-
-EXPOSE 4000
-
-CMD ["npm", "start"]
+```text
+GET /health   -> process health
+GET /ready    -> process + MongoDB readiness
 ```
 
-#### Build & Push
-```bash
-docker build -t ngo-backend:latest .
-docker run -p 4000:4000 --env-file .env ngo-backend:latest
-```
+The service should not be considered ready when `/ready` returns HTTP 503.
 
-## Frontend Deployment
+## 3. Required backend environment
 
-### Option 1: Vercel
-
-#### Setup
-```bash
-# Install Vercel CLI
-npm install -g vercel
-
-# Deploy from frontend directory
-cd frontend
-vercel
-
-# Add environment variables in Vercel dashboard
-# VITE_API_URL=https://your-backend.com
-```
-
-#### vercel.json
-```json
-{
-  "buildCommand": "npm run build",
-  "outputDirectory": "dist",
-  "env": {
-    "VITE_API_URL": "@api_url"
-  }
-}
-```
-
-### Option 2: Netlify
-
-1. Connect GitHub repository
-2. Select frontend folder
-3. Set build command: `npm run build`
-4. Set publish directory: `dist`
-5. Add environment variables
-6. Deploy
-
-### Option 3: AWS S3 + CloudFront
-
-```bash
-# Build application
-npm run build
-
-# Create S3 bucket
-aws s3 mb s3://ngo-app-bucket
-
-# Upload files
-aws s3 sync dist/ s3://ngo-app-bucket/ --delete
-
-# Create CloudFront distribution
-# Link to S3 bucket
-# Add SSL certificate
-# Configure domain routing
-```
-
-### Option 4: GitHub Pages
-
-```bash
-# Update vite.config.ts
-base: '/ngo-app/'
-
-# Build
-npm run build
-
-# Push to gh-pages branch
-npm run deploy
-```
-
-## Database Deployment
-
-### MongoDB Atlas
-
-1. Create account at mongodb.com/cloud
-2. Create cluster (free tier available)
-3. Create database user
-4. Whitelist IP addresses
-5. Get connection string
-6. Add to .env: `MONGODB_URI=mongodb+srv://...`
-
-### Database Backup
-
-```bash
-# Backup local database
-mongodump --db ngo --out ./backup
-
-# Restore from backup
-mongorestore ./backup
-
-# Backup from Atlas
-mongoexport --db ngo --collection users --out users.json
-```
-
-## SSL/TLS Certificate
-
-### Let's Encrypt (Free)
-
-```bash
-sudo apt-get install certbot
-
-# For standalone
-sudo certbot certonly --standalone -d yourdomain.com
-
-# For nginx
-sudo certbot certonly --nginx -d yourdomain.com
-
-# Auto-renewal
-sudo certbot renew --dry-run
-```
-
-### Configure HTTPS
-
-Update backend code:
-```typescript
-import https from 'https';
-import fs from 'fs';
-
-const options = {
-  key: fs.readFileSync('/path/to/private-key.pem'),
-  cert: fs.readFileSync('/path/to/certificate.pem')
-};
-
-https.createServer(options, app).listen(443);
-```
-
-## Environment Variables Setup
-
-Create production `.env` file:
+Create these values in the deployment platform's secret/environment configuration. Do not commit a production `.env` file.
 
 ```env
-# Database
-MONGODB_URI=mongodb+srv://user:password@cluster.mongodb.net/ngo-prod
-
-# Server
-PORT=4000
 NODE_ENV=production
-
-# JWT
-JWT_SECRET=your-production-secret-key
-JWT_EXPIRY=7d
-
-# Email
-EMAIL_USER=noreply@yourdomain.com
-EMAIL_PASSWORD=your-app-password
-SMTP_HOST=smtp.gmail.com
-SMTP_PORT=587
-
-# Razorpay (Production)
-RAZORPAY_KEY_ID=prod_key_id
-RAZORPAY_KEY_SECRET=prod_key_secret
-
-# PhonePe (Production)
-PHONEPE_MERCHANT_ID=prod_merchant_id
-PHONEPE_API_KEY=prod_api_key
-PHONEPE_API_URL=https://api.phonepe.com
-
-# PayU (Production)
-PAYU_MERCHANT_ID=prod_merchant_id
-PAYU_MERCHANT_KEY=prod_merchant_key
-PAYU_AUTH_HEADER=prod_auth_header
-
-# Organization
-ORG_NAME=Your NGO Name
-ORG_EMAIL=info@yourdomain.com
-ORG_PHONE=+91-XXXXXXXXXX
-ORG_ADDRESS=Your Address
-
-# CORS
-ALLOWED_ORIGINS=https://yourdomain.com,https://app.yourdomain.com
-
-# Frontend
-VITE_API_URL=https://api.yourdomain.com
+PORT=7856
+MONGO_URI=mongodb+srv://<app-user>:<password>@<cluster>/<database>
+DB_NAME=ngo_management_db
+JWT_SECRET=<at-least-32-random-characters>
+JWT_ISSUER=ngo-api
+JWT_AUDIENCE=ngo-web
+FRONTEND_URL=https://www.example-ngo.org
+TRUST_PROXY=1
 ```
 
-## Monitoring & Logging
+`TRUST_PROXY` must match the actual proxy topology. Do not blindly use `1` when the deployment has a different number or arrangement of trusted proxies.
 
-### PM2 Monitoring
+Payment and SMTP variables are required only for the corresponding features:
+
+```env
+RAZORPAY_KEY_ID=...
+RAZORPAY_KEY_SECRET=...
+PHONEPE_MERCHANT_ID=...
+PHONEPE_SALT_KEY=...
+PAYUMONEY_MERCHANT_KEY=...
+PAYUMONEY_SALT=...
+EMAIL_HOST=...
+EMAIL_PORT=587
+EMAIL_USER=...
+EMAIL_PASSWORD=...
+EMAIL_FROM=...
+```
+
+The frontend must never receive backend secrets such as `JWT_SECRET`, payment secrets, SMTP passwords, or the MongoDB URI.
+
+## 4. Frontend deployment
+
+From `frontend/`:
 
 ```bash
-# Install PM2 monitoring
-pm2 install pm2-auto-pull
-pm2 install pm2-logrotate
-
-# View logs
-pm2 logs ngo-backend
-
-# Monitoring dashboard
-pm2 web
+npm ci
+npm run lint
+npm run build
 ```
 
-### Application Logging
+Deploy the resulting `dist/` directory to a static hosting provider.
 
-```typescript
-// Add to backend
-import winston from 'winston';
+For a separate API origin, set the build-time variable:
 
-const logger = winston.createLogger({
-  level: 'info',
-  format: winston.format.json(),
-  transports: [
-    new winston.transports.File({ filename: 'error.log', level: 'error' }),
-    new winston.transports.File({ filename: 'combined.log' })
-  ]
-});
+```env
+VITE_API_URL=https://api.example-ngo.org/api
 ```
 
-### Error Tracking
+If the frontend and API are served behind the same origin/reverse proxy, leave `VITE_API_URL` unset so the client uses `/api`.
+
+The client uses Axios with `withCredentials: true` because authentication is provided by the backend's HttpOnly cookie.
+
+## 5. Reverse proxy and HTTPS
+
+Terminate TLS at the hosting platform or reverse proxy and forward requests to the Node.js process. Preserve the original host/protocol information required by the platform's proxy configuration.
+
+Production authentication cookies are `Secure` and `SameSite=Strict`. The frontend/backend domain arrangement must therefore be compatible with those cookie settings.
+
+The backend has explicit CORS protection. `FRONTEND_URL` must contain the exact browser origin(s), without a wildcard.
+
+## 6. MongoDB Atlas
+
+Use a dedicated least-privilege application database user. Configure Atlas network access for the deployment environment rather than opening the database unnecessarily to the public internet.
+
+The application connects with Mongoose using:
+
+```text
+MONGO_URI + DB_NAME
+```
+
+After deployment, verify:
+
+1. `/health` returns HTTP 200.
+2. `/ready` returns HTTP 200.
+3. A registration/login flow succeeds.
+4. `/api/auth/me` returns the authenticated user when the browser sends its cookie.
+5. A non-destructive read/write smoke test reaches the expected MongoDB database.
+
+Do not run destructive database commands as part of deployment verification.
+
+## 7. Payments
+
+Use gateway sandbox/test credentials before enabling live payments.
+
+Razorpay order creation and signature verification occur on the backend. The Razorpay secret must remain server-side. Verify the complete payment flow in a test environment before switching to production credentials.
+
+The application currently exposes the Razorpay payment flow through:
+
+```text
+POST /api/donations/order
+POST /api/donations/verify
+```
+
+## 8. Email and PDF/QR features
+
+After deployment, test SMTP-dependent operations with non-production test recipients first. Also verify the PDF receipt and QR/certificate paths that your organization actually uses.
+
+Do not log passwords, JWTs, payment secrets, SMTP passwords, or database credentials while troubleshooting.
+
+## 9. CI quality gates
+
+The repository's production-quality workflow runs on pushes and pull requests for `master` and `production-hardening`.
+
+It verifies:
+
+- repository hygiene
+- absence of TypeScript application source under `frontend/src` and `backend/src`
+- backend syntax with `npm run check`
+- high-severity backend dependency vulnerabilities
+- frontend linting
+- frontend production build
+- existence of `dist/index.html`
+- high-severity frontend dependency vulnerabilities
+
+Run the same commands locally before deployment:
 
 ```bash
-npm install --save sentry
+cd backend
+npm ci
+npm run check
+npm audit --audit-level=high
+
+cd ../frontend
+npm ci
+npm run lint
+npm run build
+npm audit --audit-level=high
 ```
 
-Configure Sentry:
-```typescript
-import * as Sentry from "@sentry/node";
+## 10. Operational checks after deployment
 
-Sentry.init({
-  dsn: "your-sentry-dsn",
-  environment: process.env.NODE_ENV
-});
+Perform these checks after every production deployment:
+
+```text
+GET /health
+GET /ready
+POST /api/auth/register      (test account only)
+POST /api/auth/login
+GET  /api/auth/me
+POST /api/auth/logout
+GET  /api/news
+GET  /api/campaigns
+GET  /api/projects
+GET  /api/events/upcoming
 ```
 
-## Performance Optimization
+Also test the specific payment, email, certificate, report, admin, volunteer, beneficiary, and event workflows enabled in the deployment.
 
-### Database Indexes
+Confirm browser Network requests use the intended API origin and that no request attempts to use `/graphql`.
 
-```javascript
-// Create indexes in MongoDB Atlas
-db.users.createIndex({ email: 1 }, { unique: true })
-db.memberships.createIndex({ memberId: 1 }, { unique: true })
-db.donations.createIndex({ transactionId: 1 }, { unique: true })
-db.campaigns.createIndex({ status: 1, endDate: 1 })
-db.news.createIndex({ slug: 1 }, { unique: true })
-db.activities.createIndex({ createdAt: -1 })
-```
+## 11. Backups and monitoring
 
-### Caching
+Enable MongoDB Atlas backups appropriate to the data's importance. Verify that backups can actually be restored in a non-production environment.
 
-```typescript
-// Redis caching
-import redis from 'redis';
+Monitor at minimum:
 
-const client = redis.createClient({
-  host: process.env.REDIS_HOST,
-  port: process.env.REDIS_PORT
-});
+- HTTP 5xx rate
+- API latency
+- `/ready` failures
+- MongoDB connection failures
+- authentication failure spikes
+- payment verification failures
+- email delivery failures
+- process restarts
 
-// Cache campaign data
-const cachedCampaigns = await client.get('campaigns');
-```
+## 12. Rollback
 
-### CDN Setup
+Keep the previous known-good deployment artifact/commit available. If a deployment fails health or smoke checks, roll back the application to the previous known-good version and investigate before retrying.
 
-For static files:
-- Upload images to CDN (Cloudflare, Cloudinary)
-- Update references in code
-- Set appropriate cache headers
+Database schema/data changes should be backward-compatible with the rollback version whenever possible.
 
-## Scheduled Tasks
+## 13. Important limitations of repository-only verification
 
-### Cron Job Hosting
+A GitHub CI pass proves that the checked commands succeed in the CI environment. It does not prove that a deployed frontend can reach a deployed API, that MongoDB Atlas accepts the production credentials, that SMTP delivery works, or that live payment gateways accept production configuration.
 
-```bash
-# Using EasyCron (free service)
-# Set webhook: https://your-api.com/api/cron/birthday-wishes
-
-# Or use AWS Lambda
-# Or use DigitalOcean Functions
-```
-
-## Database Backup Strategy
-
-### Automated Backups
-
-```bash
-# Create backup script (backup.sh)
-#!/bin/bash
-TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
-mongodump --uri="mongodb+srv://user:pass@cluster.mongodb.net" --out="backup_$TIMESTAMP"
-aws s3 cp backup_$TIMESTAMP s3://backup-bucket/ --recursive
-
-# Schedule with cron
-0 2 * * * /path/to/backup.sh
-```
-
-## Security Checklist
-
-- [ ] Set strong JWT_SECRET
-- [ ] Enable HTTPS/SSL
-- [ ] Configure firewall rules
-- [ ] Setup rate limiting
-- [ ] Enable CORS for trusted domains only
-- [ ] Remove console.log from production
-- [ ] Setup error logging
-- [ ] Enable database backups
-- [ ] Setup monitoring alerts
-- [ ] Regularly update dependencies
-- [ ] Use environment variables for secrets
-- [ ] Setup email verification
-- [ ] Configure payment gateway sandboxes for testing
-
-## Post-Deployment
-
-1. Test all features in production
-2. Verify email sending
-3. Test payment gateways
-4. Check PDF generation
-5. Verify QR code generation
-6. Test file uploads
-7. Monitor error logs
-8. Load test critical endpoints
-9. Setup monitoring alerts
-10. Create incident response plan
-
-## Rollback Procedure
-
-```bash
-# Heroku
-heroku releases
-heroku rollback v10
-
-# DigitalOcean
-# Redeploy from previous commit
-git revert HEAD
-git push
-
-# Docker
-docker ps
-docker run -d -p 4000:4000 ngo-backend:previous-tag
-```
-
-## Troubleshooting
-
-### Application won't start
-```bash
-# Check logs
-pm2 logs
-# or Vercel dashboard
-# or Heroku logs -t
-
-# Common issues:
-# - Missing environment variables
-# - Database connection error
-# - Port already in use
-```
-
-### Database connection timeout
-```bash
-# Check MongoDB Atlas whitelist
-# Verify connection string
-# Check network connectivity
-# Try local connection first
-```
-
-### Payment gateway not working
-```bash
-# Verify API keys in .env
-# Check if production/sandbox mode is correct
-# Verify merchant ID
-# Check webhook URLs
-```
-
-## Maintenance
-
-### Regular Tasks
-
-- Monitor error logs weekly
-- Review performance metrics monthly
-- Update dependencies quarterly
-- Backup database weekly
-- Test backup restoration quarterly
-- Review security logs monthly
-
-### Update Dependencies
-
-```bash
-npm outdated
-npm update
-npm audit fix
-```
-
----
-
-For detailed provider-specific documentation, refer to:
-- [Heroku Docs](https://devcenter.heroku.com/)
-- [Vercel Docs](https://vercel.com/docs)
-- [MongoDB Atlas Docs](https://docs.atlas.mongodb.com/)
-- [AWS Docs](https://docs.aws.amazon.com/)
+Those checks require access to the actual deployment environment and its runtime secrets and must be performed as deployment smoke tests rather than inferred from source code.
