@@ -30,6 +30,9 @@ if (trustProxy) {
   else if (['true', 'false'].includes(trustProxy.toLowerCase())) app.set('trust proxy', trustProxy.toLowerCase() === 'true');
   else app.set('trust proxy', trustProxy.split(',').map((value) => value.trim()).filter(Boolean));
 }
+const configuredSameSite = process.env.COOKIE_SAMESITE?.trim().toLowerCase();
+const cookieSameSite = ['strict', 'lax', 'none'].includes(configuredSameSite) ? configuredSameSite : 'strict';
+if (isProduction && cookieSameSite === 'none' && process.env.COOKIE_SECURE !== 'true') throw new Error('COOKIE_SECURE=true is required when COOKIE_SAMESITE=none in production');
 app.use(helmet({ contentSecurityPolicy: isProduction ? undefined : false, crossOriginEmbedderPolicy: false }));
 app.use(cors(corsOptions));
 app.use(cookieParser());
