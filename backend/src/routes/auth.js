@@ -4,9 +4,14 @@ import { comparePassword, generateMembershipId, generateReferralCode, hashPasswo
 import { authMiddleware } from '../middleware/auth.js';
 
 const router = Router();
+const isProduction = process.env.NODE_ENV === 'production';
+const configuredSameSite = process.env.COOKIE_SAMESITE?.trim().toLowerCase();
+const cookieSameSite = ['strict', 'lax', 'none'].includes(configuredSameSite) ? configuredSameSite : 'strict';
+const cookieSecure = isProduction || cookieSameSite === 'none';
+const cookieOptions = { httpOnly: true, secure: cookieSecure, sameSite: cookieSameSite, maxAge: 15 * 60 * 1000, path: '/' };
 const safeUser = (user) => { const value = user?.toObject ? user.toObject() : { ...user }; if (value) delete value.password; return value; };
-const setCookie = (res, token) => res.cookie('ngo_access_token', token, { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax', maxAge: 15 * 60 * 1000, path: '/' });
-const clearCookie = (res) => res.clearCookie('ngo_access_token', { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax', path: '/' });
+const setCookie = (res, token) => res.cookie('ngo_access_token', token, cookieOptions);
+const clearCookie = (res) => res.clearCookie('ngo_access_token', { httpOnly: true, secure: cookieSecure, sameSite: cookieSameSite, path: '/' });
 
 router.post('/register', async (req, res) => {
   try {
