@@ -5,4 +5,6 @@ const eventRegistrationSchema = new Schema({
   registrationDate: { type: Date, default: Date.now }, amountPaid: { type: Number }, paymentStatus: { type: String, enum: ['pending', 'completed', 'cancelled'], default: 'pending' }, receiptUrl: { type: String }
 }, { timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' } });
 
+eventRegistrationSchema.index({ eventId: 1, userId: 1 }, { unique: true });
+
 export const EventRegistrationModel = mongoose.model('EventRegistration', eventRegistrationSchema);

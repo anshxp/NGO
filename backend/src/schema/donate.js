@@ -6,7 +6,10 @@ const donateSchema = new Schema({
   payment_method: { type: String, required: true, enum: ['razorpay', 'phonepe', 'payumoney', 'cash', 'bank_transfer', 'upi'] }, timestamp: { type: Date, default: Date.now },
   donation_type: { type: String, required: true, enum: ['one-time', 'monthly', 'campaign', 'general'] },
   payment_status: { type: String, enum: ['SUCCESS', 'FAILED', 'PENDING'], default: 'PENDING' }, isAnonymous: { type: Boolean, default: false },
-  referredBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, receiptUrl: { type: String }, orderId: { type: String, index: true }, paymentId: { type: String, index: true }, signature: { type: String }
+  referredBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', index: true }, receiptUrl: { type: String }, orderId: { type: String, index: true }, paymentId: { type: String, index: true }, signature: { type: String, select: false }
 }, { timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' } });
+
+donateSchema.index({ donatorEmail: 1, created_at: -1 });
+donateSchema.index({ payment_status: 1, created_at: -1 });
 
 export const DonateModel = mongoose.model('Donate', donateSchema);

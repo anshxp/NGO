@@ -9,6 +9,7 @@ import { apiRouter } from './routes/api.js';
 import adminRouter from './routes/admin.js';
 import reportRouter from './routes/reports.js';
 import authRouter from './routes/auth.js';
+import userFeaturesRouter from './routes/userFeatures.js';
 import { apiSecurity } from './middleware/apiSecurity.js';
 import { auditSensitiveRequest } from './middleware/audit.js';
 import { csrfOriginGuard } from './middleware/csrf.js';
@@ -53,6 +54,7 @@ app.use('/api', auditSensitiveRequest);
 app.use('/api/admin/reports', reportRouter);
 app.use('/api/admin', adminRouter);
 app.use('/api', apiRouter);
+app.use('/api', userFeaturesRouter);
 app.use((err, _req, res, _next) => { console.error('Unhandled HTTP error', err instanceof Error ? err.message : 'unknown error'); if (!res.headersSent) res.status(500).json({ error: 'Internal server error' }); });
 async function start() { try { await connectDB(); app.listen(PORT, () => console.log(`NGO API listening on port ${PORT}`)); } catch (_err) { console.error('Error starting server'); process.exit(1); } }
 start();
