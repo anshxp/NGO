@@ -21,7 +21,9 @@ Configure the values required by the features you intend to use. At minimum, the
 
 The backend also supports explicit `TRUST_PROXY` configuration. Set it only to match the actual reverse-proxy/deployment topology.
 
-For the frontend, set `VITE_API_URL` only when the frontend and backend are deployed separately. The default is `/api`.
+Authentication cookies default to `SameSite=Strict`. For a frontend and API deployed on different sites, set `COOKIE_SAMESITE=none` and `COOKIE_SECURE=true` and serve both endpoints over HTTPS.
+
+For the frontend, set `VITE_API_URL` only when the frontend and backend are deployed separately. It may be either the backend origin (for example `https://api.example.org`) or the backend `/api` base URL (`https://api.example.org/api`). The client normalizes both forms. The default is `/api`.
 
 ## Run locally
 
@@ -120,7 +122,7 @@ GitHub Actions repeats these checks and also verifies repository hygiene. The pr
 
 If the frontend cannot reach the backend, verify `VITE_API_URL`, the backend `/api/health` route, CORS configuration, and browser Network requests.
 
-If authentication repeatedly returns 401, verify that the browser accepts cookies for the deployed frontend/backend domain arrangement and that `FRONTEND_URL`, CORS, HTTPS and cookie settings are consistent.
+If authentication repeatedly returns 401, verify that the browser accepts cookies for the deployed frontend/backend domain arrangement and that `FRONTEND_URL`, CORS, HTTPS and cookie settings are consistent. For cross-site deployments, verify `COOKIE_SAMESITE=none` and `COOKIE_SECURE=true`.
 
 If MongoDB fails to connect, verify `MONGO_URI`, network access rules, database credentials and DNS/TLS configuration.
 
