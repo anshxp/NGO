@@ -74,7 +74,6 @@ export const campaignAPI = {
   createCampaign: (data) => api.post('/admin/campaigns', data),
   updateCampaign: (id, data) => api.put(`/admin/campaigns/${id}`, data),
   closeCampaign: (id) => api.post(`/admin/campaigns/${id}/close`),
-  donateToCampaign: (id, amount) => api.post(`/campaigns/${id}/donate`, { amount }),
 };
 
 export const projectAPI = {
