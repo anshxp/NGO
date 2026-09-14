@@ -1,6 +1,6 @@
 # Deployment Guide
 
-This guide reflects the current production-hardening branch. The application uses React/Vite, Node.js/Express, MongoDB/Mongoose, REST/JSON APIs, and HttpOnly JWT cookies.
+This guide reflects the current `production-hardening` branch. The application uses React/Vite, Node.js/Express, MongoDB/Mongoose, REST/JSON APIs, and HttpOnly JWT cookies.
 
 ## 1. Production architecture
 
@@ -24,12 +24,12 @@ The frontend and backend may be deployed separately. If they share an origin/rev
 
 ## 2. Backend deployment
 
-Use a Node.js hosting provider that supports Node.js 20.20.x or later within the project's declared major-version range.
+The repository currently does not commit npm lockfiles, so use `npm install` rather than `npm ci` until lockfiles are intentionally introduced.
 
 From `backend/`:
 
 ```bash
-npm ci
+npm install --ignore-scripts
 npm run check
 npm start
 ```
@@ -59,9 +59,13 @@ JWT_ISSUER=ngo-api
 JWT_AUDIENCE=ngo-web
 FRONTEND_URL=https://www.example-ngo.org
 TRUST_PROXY=1
+COOKIE_SAMESITE=strict
+COOKIE_SECURE=true
 ```
 
 `TRUST_PROXY` must match the actual proxy topology. Do not blindly use `1` when the deployment has a different number or arrangement of trusted proxies.
+
+For a genuinely cross-site frontend/API deployment, configure `COOKIE_SAMESITE=none` and `COOKIE_SECURE=true`, and serve both sides over HTTPS. Keep `FRONTEND_URL` restricted to the exact browser origin(s).
 
 Payment and SMTP variables are required only for the corresponding features:
 
@@ -86,7 +90,7 @@ The frontend must never receive backend secrets such as `JWT_SECRET`, payment se
 From `frontend/`:
 
 ```bash
-npm ci
+npm install --ignore-scripts
 npm run lint
 npm run build
 ```
@@ -107,7 +111,7 @@ The client uses Axios with `withCredentials: true` because authentication is pro
 
 Terminate TLS at the hosting platform or reverse proxy and forward requests to the Node.js process. Preserve the original host/protocol information required by the platform's proxy configuration.
 
-Production authentication cookies are `Secure` and `SameSite=Strict`. The frontend/backend domain arrangement must therefore be compatible with those cookie settings.
+Production authentication cookies are `Secure`. `SameSite=Strict` is the default and is appropriate when the deployment is same-site. Use `SameSite=None` only when the frontend/API are genuinely cross-site and HTTPS is enabled.
 
 The backend has explicit CORS protection. `FRONTEND_URL` must contain the exact browser origin(s), without a wildcard.
 
@@ -115,7 +119,7 @@ The backend has explicit CORS protection. `FRONTEND_URL` must contain the exact 
 
 Use a dedicated least-privilege application database user. Configure Atlas network access for the deployment environment rather than opening the database unnecessarily to the public internet.
 
-The application connects with Mongoose using:
+The application connects with:
 
 ```text
 MONGO_URI + DB_NAME
@@ -133,11 +137,9 @@ Do not run destructive database commands as part of deployment verification.
 
 ## 7. Payments
 
-Use gateway sandbox/test credentials before enabling live payments.
+Payment integration is intentionally still pending for production. The repository contains Razorpay order/signature code, but do not enable live payments until the complete sandbox flow has been tested and gateway-side payment/order state, amount, currency, and idempotency have been verified.
 
-Razorpay order creation and signature verification occur on the backend. The Razorpay secret must remain server-side. Verify the complete payment flow in a test environment before switching to production credentials.
-
-The application currently exposes the Razorpay payment flow through:
+The current Razorpay endpoints are:
 
 ```text
 POST /api/donations/order
@@ -165,20 +167,7 @@ It verifies:
 - existence of `dist/index.html`
 - high-severity frontend dependency vulnerabilities
 
-Run the same commands locally before deployment:
-
-```bash
-cd backend
-npm ci
-npm run check
-npm audit --audit-level=high
-
-cd ../frontend
-npm ci
-npm run lint
-npm run build
-npm audit --audit-level=high
-```
+CI currently uses `npm install --ignore-scripts`, which creates a temporary lockfile in the runner because lockfiles are not committed to the repository.
 
 ## 10. Operational checks after deployment
 
