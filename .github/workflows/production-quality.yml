@@ -29,6 +29,13 @@ jobs:
             exit 1
           fi
 
+          tracked_env_files=$(git ls-files | grep -E '(^|/)\.env($|\.)' | grep -vE '(^|/)\.env\.example$' || true)
+          if [ -n "$tracked_env_files" ]; then
+            echo "Tracked environment files detected:"
+            echo "$tracked_env_files"
+            exit 1
+          fi
+
   backend:
     runs-on: ubuntu-latest
     defaults:
@@ -42,6 +49,8 @@ jobs:
       - run: npm install --ignore-scripts
       - name: Verify production entrypoint
         run: npm run check
+      - name: Run backend tests
+        run: npm test
       - name: Verify dependency security
         run: npm audit --audit-level=high
 
