@@ -1,8 +1,11 @@
 import { Router } from 'express';
+import crypto from 'crypto';
 import { ActivityModel } from '../schema/activity.js';
 import { MembershipModel } from '../schema/membership.js';
 import { ProjectModel } from '../schema/project.js';
 import { UserModel } from '../schema/user.js';
+import { EventModel } from '../schema/event.js';
+import { EventRegistrationModel } from '../schema/eventRegistration.js';
 import { authMiddleware } from '../middleware/auth.js';
 
 const router = Router();
@@ -48,6 +51,24 @@ router.post('/memberships/:id/renew', authMiddleware, async (req, res) => {
   await membership.save();
   await UserModel.updateOne({ _id: membership.userId }, { $set: { membershipStatus: 'active', membershipPaidDate: new Date() } });
   return res.json({ success: true, message: 'Membership renewed', expiryDate: membership.expiryDate });
+});
+
+router.post('/events/:id/register', authMiddleware, async (req, res) => {
+  if (!idOk(req.params.id)) return res.status(400).json({ error: 'Invalid identifier' });
+  const event = await EventModel.findById(req.params.id);
+  if (!event) return res.status(404).json({ error: 'Event not found' });
+  try {
+    const registration = await EventRegistrationModel.create({
+      registrationId: `REG${Date.now()}${crypto.randomBytes(4).toString('hex').toUpperCase()}`,
+      eventId: event._id,
+      userId: req.userId,
+    });
+    await EventModel.updateOne({ _id: event._id }, { $inc: { registrationCount: 1 }, $addToSet: { registrations: req.userId } });
+    return res.status(201).json({ success: true, registration });
+  } catch (e) {
+    if (e?.code === 11000) return res.status(409).json({ error: 'Already registered' });
+    return res.status(500).json({ error: 'Registration failed' });
+  }
 });
 
 export default router;
