@@ -2,7 +2,16 @@ import { donationAPI } from './apiClient';
 
 export async function createDonationOrder(input) {
   const response = await donationAPI.createOrder(input);
-  return response.data;
+  const data = response.data || {};
+  const donation = data.donation || {};
+  const order = data.order || {};
+  return {
+    ...donation,
+    orderId: order.id || donation.orderId,
+    amount: order.amount ?? donation.amount,
+    currency: order.currency || 'INR',
+    keyId: order.keyId,
+  };
 }
 
 export async function verifyDonationPayment(orderId, paymentId, signature) {
