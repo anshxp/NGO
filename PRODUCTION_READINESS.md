@@ -4,7 +4,9 @@ Branch: `production-hardening`
 
 ## Current status
 
-The repository has completed the code-hardening phases performed on this branch. The application is a React/Vite frontend using REST/JSON against an Express/JavaScript backend with Mongoose/MongoDB. GraphQL and the old TypeScript runtime are not part of the current architecture.
+The repository has completed the code-hardening work that is in scope for this branch. The application is a React/Vite frontend using REST/JSON against an Express/JavaScript backend with Mongoose/MongoDB. GraphQL and the old TypeScript runtime are not part of the current architecture.
+
+This document deliberately separates repository hardening from deployment and payment operations. A passing CI run is not evidence that a deployed environment, MongoDB credentials, SMTP, or live payment processing has been validated.
 
 ## Completed phases
 
@@ -35,6 +37,8 @@ The repository has completed the code-hardening phases performed on this branch.
 - ObjectId validation on protected resource identifiers.
 - Sensitive fields excluded from API responses.
 - Timing-safe Razorpay signature comparison.
+- Removed the legacy JWT middleware/token utility that contained a fallback secret.
+- Removed the tracked frontend `.env` file containing local/test configuration.
 
 ### Phase 4 — API/data-integrity hardening
 
@@ -48,21 +52,33 @@ The repository has completed the code-hardening phases performed on this branch.
 - Removed the unsupported frontend campaign donation API method because the REST backend does not expose a corresponding campaign donation endpoint.
 - Production frontend/backend cookie configuration is documented.
 
-## CI validation
+## Current validation
 
-The latest successful Production Quality workflow completed all three jobs:
+The repository's Production Quality workflow validates repository hygiene, backend syntax and dependency audit, frontend lint/build, and frontend dependency audit. CI uses `npm install --ignore-scripts`; the repository currently does not commit npm lockfiles.
 
-- repository-hygiene: success
-- backend: success
-- frontend: success
+A CI pass validates the repository in the runner. It does not replace deployment smoke tests or external security testing.
 
-The latest successful run was executed against commit `c4d4d0185a1d2f1dee4f902a9575291edab23fbf`. The campaign API cleanup was subsequently committed as `e4c68f8ad69acfb3cea39cf8b3ee7f0f36344c4d` and requires the normal CI run for that new commit.
+## Known limitations / explicit pending items
 
-## Explicitly pending
+### Payment
 
-Payment integration is intentionally **not** marked complete. Razorpay order/signature code exists, but live payment readiness requires real sandbox/live gateway testing and additional gateway-side verification such as confirming the payment/order state and amount before marking a donation successful.
+Payment integration is intentionally **pending**. Razorpay order creation and signature verification code exists, but live payment readiness requires sandbox testing and gateway-side verification of payment/order state, amount, currency, and idempotency. A webhook/reconciliation design has not been declared complete.
 
-Deployment is also intentionally **not** marked complete. Deployment is managed by the project owner and must be validated in the actual hosting environment with the production MongoDB, frontend URL, CORS, cookies, SMTP, and gateway configuration.
+### Deployment
+
+Deployment is intentionally **pending owner-side execution**. The actual hosting environment must be tested with the production MongoDB, frontend URL, CORS, cookies, SMTP, and gateway configuration.
+
+### Automated application tests
+
+The repository does not currently contain a dedicated automated application test suite. CI therefore provides syntax, lint, build, hygiene, and dependency checks rather than full endpoint/integration/authorization coverage.
+
+### Production operational controls
+
+Backup restoration, penetration testing, live HTTPS/cookie behavior, SMTP delivery, payment sandbox/live behavior, and deployed frontend-to-backend end-to-end flows require access to the actual environment and are not claimed as completed here.
+
+### Frontend route inventory
+
+The active router intentionally exposes the pages currently wired in `frontend/src/App.jsx`. Some legacy page files remain in the repository but are not automatically treated as working production routes merely because the files exist. They should only be routed after their API contracts and UI integration are verified.
 
 ## Database
 
@@ -70,9 +86,9 @@ MongoDB connection configuration is retained as provided by the project. The bac
 
 ## Final classification
 
-**Code hardening:** completed for the implemented phases.
+**Repository code hardening:** completed for the implemented phases.
 
-**CI baseline:** passing before the latest frontend API cleanup; rerun CI on the latest commit before declaring the branch fully green.
+**CI baseline:** must remain green on the latest branch head after each change.
 
 **Payment:** pending.
 
