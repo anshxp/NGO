@@ -8,7 +8,7 @@ export async function createDonationOrder(input) {
   return {
     ...donation,
     orderId: order.id || donation.orderId,
-    amount: order.amount ?? donation.amount,
+    amount: donation.amount,
     currency: order.currency || 'INR',
     keyId: order.keyId,
   };
