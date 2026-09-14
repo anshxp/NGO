@@ -44,14 +44,14 @@ export default function Donate() {
         referralCode: formData.referralCode || undefined,
       });
 
-      const razorpayKeyId = import.meta.env.VITE_RAZORPAY_KEY_ID;
-      if (!razorpayKeyId) throw new Error('Razorpay key is not configured');
+      const razorpayKeyId = donation.keyId;
+      if (!razorpayKeyId) throw new Error('Razorpay checkout is not configured');
       if (!window.Razorpay) throw new Error('Razorpay checkout is unavailable');
 
       const options = {
         key: razorpayKeyId,
         amount: amount * 100,
-        currency: 'INR',
+        currency: donation.currency || 'INR',
         name: 'NGO Management',
         description: `Donation - ${formData.donation_type}`,
         order_id: donation.orderId,
@@ -115,14 +115,14 @@ export default function Donate() {
                 <div><Label htmlFor="amount">Donation Amount (₹) *</Label><Input id="amount" name="amount" type="number" min="1" value={formData.amount} onChange={handleInputChange} placeholder="1000" required /></div>
               </div>
               <div><Label htmlFor="address">Address (Optional)</Label><Input id="address" name="address" value={formData.address} onChange={handleInputChange} placeholder="123 Main Street, City" /></div>
-              <div><Label htmlFor="donation_type">Donation Type</Label><Select value={formData.donation_type} onValueChange={(value) => setFormData({ ...formData, donation_type: value })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="one-time">One-Time Donation</SelectItem><SelectItem value="monthly">Monthly Donation</SelectItem><SelectItem value="campaign">Campaign Donation</SelectItem><SelectItem value="general">General Fund</SelectItem></SelectContent></Select></div>
+              <div><Label htmlFor="donation_type">Donation Type</Label><Select value={formData.donation_type} onValueChange={(value) => setFormData({ ...formData, donation_type: value })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="one-time">One-Time Donation</SelectItem><SelectItem value="monthly">Monthly Donation</SelectItem><SelectItem value="general">General Fund</SelectItem></SelectContent></Select></div>
               <div><Label htmlFor="referralCode">Referral Code (Optional)</Label><Input id="referralCode" name="referralCode" value={formData.referralCode} onChange={handleInputChange} placeholder="Enter referral code if you have one" /></div>
               <div className="flex items-center space-x-2"><Checkbox id="isAnonymous" checked={formData.isAnonymous} onCheckedChange={(checked) => setFormData({ ...formData, isAnonymous: Boolean(checked) })} /><Label htmlFor="isAnonymous" className="cursor-pointer">Make this donation anonymous</Label></div>
               <Button type="submit" className="w-full" size="lg" disabled={loading}>{loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Processing...</> : <><Heart className="mr-2 h-4 w-4" />Donate Now</>}</Button>
             </form>
           </CardContent>
         </Card>
-        <div className="mt-8 text-center text-sm text-gray-600"><p>Secure payment powered by Razorpay</p><p className="mt-2">80G tax exemption certificate will be sent via email</p></div>
+        <div className="mt-8 text-center text-sm text-gray-600"><p>Secure payment powered by Razorpay</p><p className="mt-2">Payment status is confirmed server-side.</p></div>
       </div>
     </div>
   );
