@@ -6,79 +6,55 @@ Branch: `production-hardening`
 
 The repository has completed the code-hardening work that is in scope for this branch. The application is a React/Vite frontend using REST/JSON against an Express/JavaScript backend with Mongoose/MongoDB. GraphQL and the old TypeScript runtime are not part of the current architecture.
 
-This document deliberately separates repository hardening from deployment and payment operations. A passing CI run is not evidence that a deployed environment, MongoDB credentials, SMTP, or live payment processing has been validated.
+This document deliberately separates repository hardening from deployment operations. A passing CI run is not evidence that a deployed environment, production MongoDB credentials, SMTP delivery, or live gateway processing has been validated.
 
-## Completed phases
+## Completed code-hardening work
 
-### Phase 1 — Architecture cleanup
+- REST/JSON architecture with obsolete GraphQL runtime removed.
+- Frontend/backend JavaScript migration completed.
+- HttpOnly JWT authentication with short-lived tokens, issuer/audience validation and token-version invalidation.
+- Production cookie, CORS and CSRF controls.
+- Helmet, rate limiting, request limits, request/response timeouts and disabled `x-powered-by`.
+- Health/readiness endpoints and MongoDB startup dependency.
+- ObjectId validation and sensitive-field exclusion.
+- Legacy JWT middleware/token utility with insecure fallback secret removed.
+- Tracked frontend `.env` removed; CI now rejects tracked environment files other than `.env.example`.
+- Activity, project-report, membership-renewal and event-registration API coverage hardened.
+- Event registration uniqueness/race handling and donation indexes hardened.
+- Frontend API base URL normalized for same-origin and separate API deployments.
+- Public campaign, activity and membership routes wired into the application router.
+- Membership registration now uses the real authentication API instead of a nonexistent endpoint.
+- Activity feed now uses the configured API client instead of a hard-coded same-origin request.
+- Homepage hero image is bundled through Vite instead of referencing `/src/...` at runtime.
+- Razorpay checkout now receives the server-created order and public key.
+- Razorpay payment verification now validates the gateway order/payment, amount, currency and captured status server-side.
+- Razorpay webhook endpoint added with raw-body HMAC verification and idempotent donation finalization.
+- Backend security unit tests added and enforced in CI.
+- Deployment/environment documentation aligned with the actual `MONGO_URI` runtime configuration.
 
-- Removed the old GraphQL runtime from the active application architecture.
-- Standardized the application on REST/JSON endpoints.
+## CI validation
 
-### Phase 2 — JavaScript migration
+The Production Quality workflow checks repository hygiene, absence of application TypeScript, backend syntax, backend tests, dependency vulnerabilities, frontend linting, frontend production build and frontend dependency vulnerabilities.
 
-- Completed the frontend/backend JavaScript migration.
-- Removed obsolete TypeScript/TSX runtime files and configuration.
-- CI validation for backend, frontend, and repository hygiene passed.
+The latest run must be green on the current branch head before deployment.
 
-### Phase 3 — Security and runtime hardening
-
-- Explicit reverse-proxy trust configuration.
-- HttpOnly JWT authentication cookies.
-- Production cookie security and configurable SameSite policy.
-- JWT issuer/audience validation and token-version invalidation on logout.
-- CSRF origin protection for state-changing cookie-authenticated requests.
-- Helmet security headers.
-- Exact CORS allowlist with credentials.
-- Authentication and general API rate limiting.
-- Request body limits and request/response timeouts.
-- Disabled Express `x-powered-by`.
-- Health and readiness endpoints.
-- ObjectId validation on protected resource identifiers.
-- Sensitive fields excluded from API responses.
-- Timing-safe Razorpay signature comparison.
-- Removed the legacy JWT middleware/token utility that contained a fallback secret.
-- Removed the tracked frontend `.env` file containing local/test configuration.
-
-### Phase 4 — API/data-integrity hardening
-
-- Added frontend-backed activity like/comment endpoints.
-- Added project report endpoint.
-- Added authenticated membership renewal endpoint.
-- Added unique event registration constraint and duplicate-key handling.
-- Aligned event status validation with the admin event creation flow.
-- Added donation indexes and excluded payment signatures from normal queries.
-- Normalized the frontend API base URL so both a backend origin and `/api` base URL work.
-- Removed the unsupported frontend campaign donation API method because the REST backend does not expose a corresponding campaign donation endpoint.
-- Production frontend/backend cookie configuration is documented.
-
-## Current validation
-
-The repository's Production Quality workflow validates repository hygiene, backend syntax and dependency audit, frontend lint/build, and frontend dependency audit. CI uses `npm install --ignore-scripts`; the repository currently does not commit npm lockfiles.
-
-A CI pass validates the repository in the runner. It does not replace deployment smoke tests or external security testing.
-
-## Known limitations / explicit pending items
-
-### Payment
-
-Payment integration is intentionally **pending**. Razorpay order creation and signature verification code exists, but live payment readiness requires sandbox testing and gateway-side verification of payment/order state, amount, currency, and idempotency. A webhook/reconciliation design has not been declared complete.
+## Operational items that cannot be proven from GitHub
 
 ### Deployment
 
-Deployment is intentionally **pending owner-side execution**. The actual hosting environment must be tested with the production MongoDB, frontend URL, CORS, cookies, SMTP, and gateway configuration.
+The project owner must deploy the frontend and API and verify `/health`, `/ready`, browser authentication cookies, CORS, MongoDB connectivity, SMTP delivery and all required application workflows in the actual hosting environment.
 
-### Automated application tests
+### Payment activation
 
-The repository does not currently contain a dedicated automated application test suite. CI therefore provides syntax, lint, build, hygiene, and dependency checks rather than full endpoint/integration/authorization coverage.
+The payment code is now implemented defensively, including server-side gateway verification and a signed Razorpay webhook. Production payment activation still requires Razorpay sandbox testing, webhook delivery testing, reconciliation checks and final live-credential verification. Do not enable live payments until those tests pass.
 
-### Production operational controls
+### Security assessment
 
-Backup restoration, penetration testing, live HTTPS/cookie behavior, SMTP delivery, payment sandbox/live behavior, and deployed frontend-to-backend end-to-end flows require access to the actual environment and are not claimed as completed here.
+A repository CI pass is not a penetration test. Production launch should still include an external or internal security review appropriate to the organization's risk profile, especially for admin authorization, beneficiary data, payment workflows and exposed infrastructure.
 
-### Frontend route inventory
+### Backups
 
-The active router intentionally exposes the pages currently wired in `frontend/src/App.jsx`. Some legacy page files remain in the repository but are not automatically treated as working production routes merely because the files exist. They should only be routed after their API contracts and UI integration are verified.
+MongoDB backups and restoration must be configured and tested in the actual database environment. A source-code review cannot prove a backup can be restored.
 
 ## Database
 
@@ -86,12 +62,12 @@ MongoDB connection configuration is retained as provided by the project. The bac
 
 ## Final classification
 
-**Repository code hardening:** completed for the implemented phases.
+**Repository code:** production-oriented and CI-validated, subject to the latest workflow completing successfully.
 
-**CI baseline:** must remain green on the latest branch head after each change.
+**Security hardening:** implemented at the application layer; operational security testing remains required.
 
-**Payment:** pending.
+**Payment:** implementation hardened; production activation/testing remains required.
 
-**Deployment/live end-to-end verification:** pending owner-side deployment.
+**Deployment:** owner-managed and not claimed as completed until the deployed environment passes smoke tests.
 
 **AcroIn-specific departmental-admin rules:** not applicable to this NGO repository and are not implemented here.
