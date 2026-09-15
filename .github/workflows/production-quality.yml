@@ -1,0 +1,75 @@
+name: Production Quality
+
+on:
+  push:
+    branches: [master, production-hardening]
+  pull_request:
+    branches: [master, production-hardening]
+
+permissions:
+  contents: read
+
+jobs:
+  repository-hygiene:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify repository hygiene
+        shell: bash
+        run: |
+          if find . -type d \( -name node_modules -o -name dist \) -not -path './.git/*' -print -quit | grep -q .; then
+            echo "Dependency/build artifacts detected in the checkout."
+            exit 1
+          fi
+
+          application_ts_files=$(find frontend/src backend/src -type f \( -name '*.ts' -o -name '*.tsx' \) -print)
+          if [ -n "$application_ts_files" ]; then
+            echo "TypeScript application source files detected:"
+            echo "$application_ts_files"
+            exit 1
+          fi
+
+          tracked_env_files=$(git ls-files | grep -E '(^|/)\.env($|\.)' | grep -vE '(^|/)\.env\.example$' || true)
+          if [ -n "$tracked_env_files" ]; then
+            echo "Tracked environment files detected:"
+            echo "$tracked_env_files"
+            exit 1
+          fi
+
+  backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install --ignore-scripts
+      - name: Verify production entrypoint
+        run: npm run check
+      - name: Run backend tests
+        run: npm test
+      - name: Verify dependency security
+        run: npm audit --audit-level=high
+
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install --ignore-scripts
+      - name: Lint
+        run: npm run lint
+      - name: Production build
+        run: npm run build
+      - name: Verify production bundle exists
+        run: test -f dist/index.html
+      - name: Verify dependency security
+        run: npm audit --audit-level=high
