@@ -2,6 +2,7 @@ import { Router } from 'express';
 import crypto from 'crypto';
 import Razorpay from 'razorpay';
 import { DonateModel } from '../schema/donate.js';
+import { UserModel } from '../schema/user.js';
 import { generateDonationPDF } from '../utils/pdf.js';
 import { sendDonationReceipt } from '../utils/email.js';
 
@@ -26,6 +27,11 @@ const verifyWebhookSignature = (rawBody, signature, secret) => {
   return safeEqual(expected, signature);
 };
 
+const resolveReferrer = async (referralCode) => {
+  if (!referralCode) return null;
+  return UserModel.findOne({ referralCode: String(referralCode).trim() }).select('_id');
+};
+
 const finalizeDonation = async (donation, payment) => {
   if (donation.payment_status === 'SUCCESS') return donation;
 
@@ -35,6 +41,13 @@ const finalizeDonation = async (donation, payment) => {
     { new: true }
   );
   if (!updated) return DonateModel.findById(donation._id);
+
+  if (updated.referredBy) {
+    await UserModel.updateOne(
+      { _id: updated.referredBy },
+      { $inc: { totalDonationsReferred: updated.amount } }
+    );
+  }
 
   try {
     updated.receiptUrl = await generateDonationPDF(updated);
@@ -63,6 +76,9 @@ router.post('/donations/order', async (req, res) => {
       return res.status(400).json({ error: 'Invalid donation data' });
     }
 
+    const referrer = await resolveReferrer(referralCode);
+    if (referralCode && !referrer) return res.status(400).json({ error: 'Invalid referral code' });
+
     const amountInPaise = Math.round(numericAmount * 100);
     const order = await razorpay.orders.create({
       amount: amountInPaise,
@@ -79,16 +95,11 @@ router.post('/donations/order', async (req, res) => {
       payment_method: 'razorpay',
       donation_type,
       isAnonymous: Boolean(isAnonymous),
-      referralCode: undefined,
+      referredBy: referrer?._id,
       payment_status: 'PENDING',
       transactionId: `ORD${Date.now()}${crypto.randomBytes(5).toString('hex').toUpperCase()}`,
       orderId: order.id,
     });
-
-    if (referralCode) {
-      // Referral attribution is resolved without accepting arbitrary donation fields.
-      donation.referredBy = undefined;
-    }
 
     return res.status(201).json({
       donation: { id: donation._id, orderId: order.id, amount: numericAmount, payment_status: donation.payment_status },
