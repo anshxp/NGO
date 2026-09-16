@@ -74,7 +74,7 @@ const Programs = () => {
             <p className="text-lg md:text-xl text-primary-foreground/90 mb-8">We're always expanding our programs based on community needs. Share your ideas or get in touch to learn more.</p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <NavLink to="/get-involved"><Button size="lg" className="bg-background text-foreground hover:bg-background/90">Get Involved</Button></NavLink>
-              <NavLink to="/contact"><Button size="lg" variant="outline" className="border-primary-foreground text-primary-foreground hover:bg-primary-foreground hover:text-primary">Contact Us</Button></NavLink>
+              <NavLink to="/contact"><Button size="lg" variant="outline" className="border-primary-foreground bg-transparent text-primary-foreground hover:bg-primary-foreground hover:text-primary">Contact Us</Button></NavLink>
             </div>
           </div>
         </div>
