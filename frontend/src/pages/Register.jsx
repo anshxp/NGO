@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,7 +12,6 @@ import { authAPI } from '@/lib/apiClient';
 
 const Register = () => {
   const navigate = useNavigate();
-  const { login: _login } = useAuth();
   const [formData, setFormData] = useState({ name: '', email: '', password: '', phone: '', address: '', dateOfBirth: '' });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
