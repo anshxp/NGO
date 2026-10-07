@@ -23,7 +23,7 @@ const configuredSameSite = process.env.COOKIE_SAMESITE?.trim().toLowerCase();
 const cookieSameSite = ['strict', 'lax', 'none'].includes(configuredSameSite) ? configuredSameSite : 'strict';
 const cookieSecure = isProduction || cookieSameSite === 'none';
 const cookieOptions = { httpOnly: true, secure: cookieSecure, sameSite: cookieSameSite, maxAge: 15 * 60 * 1000, path: '/' };
-const safeUser = (user) => { const value = user?.toObject ? user.toObject() : { ...user }; if (value) { delete value.password; delete value.mfaSecretEncrypted; delete value.emailVerificationTokenHash; delete value.passwordResetTokenHash; } return value; };
+const safeUser = (user) => { const value = user?.toObject ? user.toObject() : { ...user }; if (value) { delete value.password; delete value.mfaSecretEncrypted; delete value.emailVerificationTokenHash; delete value.emailVerificationExpiresAt; delete value.passwordResetTokenHash; delete value.passwordResetExpiresAt; } return value; };
 const setCookie = (res, token) => res.cookie('ngo_access_token', token, cookieOptions);
 const clearCookie = (res) => res.clearCookie('ngo_access_token', { httpOnly: true, secure: cookieSecure, sameSite: cookieSameSite, path: '/' });
 const emailTokenExpiry = () => new Date(Date.now() + 24 * 60 * 60 * 1000);
