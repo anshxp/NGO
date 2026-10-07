@@ -16,10 +16,16 @@ const api = axios.create({
 api.interceptors.response.use((response) => response, (error) => Promise.reject(error));
 
 export const authAPI = {
-  login: (email, password) => api.post('/auth/login', { email, password }),
+  login: (email, password, mfaCode) => api.post('/auth/login', { email, password, ...(mfaCode ? { mfaCode } : {}) }),
   register: (data) => api.post('/auth/register', data),
   logout: () => api.post('/auth/logout'),
   getCurrentUser: () => api.get('/auth/me'),
+  verifyEmail: (token) => api.post('/auth/verify-email', { token }),
+  resendVerification: (email) => api.post('/auth/resend-verification', { email }),
+  forgotPassword: (email) => api.post('/auth/forgot-password', { email }),
+  resetPassword: (token, password) => api.post('/auth/reset-password', { token, password }),
+  mfaSetup: (setupToken) => api.post('/auth/mfa/setup', null, { headers: { Authorization: `Bearer ${setupToken}` } }),
+  mfaConfirm: (setupToken, code) => api.post('/auth/mfa/confirm', { code }, { headers: { Authorization: `Bearer ${setupToken}` } }),
 };
 
 export const membershipAPI = {
