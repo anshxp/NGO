@@ -13,7 +13,7 @@ import { authAPI } from '@/lib/apiClient';
 
 const Register = () => {
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login: _login } = useAuth();
   const [formData, setFormData] = useState({ name: '', email: '', password: '', phone: '', address: '', dateOfBirth: '' });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -25,7 +25,7 @@ const Register = () => {
     setError('');
     setLoading(true);
     try {
-      await authAPI.register({
+      const registration = await authAPI.register({
         name: formData.name.trim(),
         email: formData.email.trim().toLowerCase(),
         password: formData.password,
@@ -33,9 +33,8 @@ const Register = () => {
         address: formData.address.trim(),
         ...(formData.dateOfBirth ? { dateOfBirth: formData.dateOfBirth } : {}),
       });
-      await login(formData.email, formData.password);
-      toast.success('Registration successful.');
-      navigate('/dashboard');
+      toast.success(registration.data?.emailVerificationRequired ? 'Account created. Check your email to verify it.' : 'Registration successful.');
+      navigate('/login');
     } catch (err) {
       const errorMsg = err.response?.data?.error || err.message || 'Registration failed. Please try again.';
       setError(errorMsg);
