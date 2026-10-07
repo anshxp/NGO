@@ -465,3 +465,27 @@ export const sendCampaignUpdateEmail = async (userData) => {
         return false;
     }
 };
+
+
+const appBaseUrl = () => String(process.env.FRONTEND_URL || '').split(',')[0].trim().replace(/\/$/, '');
+const sendSecurityEmail = async ({ to, subject, title, message, link }) => {
+    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD || !appBaseUrl()) throw new Error('SMTP or FRONTEND_URL is not configured');
+    const html = `<div style="font-family:Arial,sans-serif;max-width:600px;margin:auto;padding:24px"><h2>${title}</h2><p>${message}</p><p><a href="${link}" style="display:inline-block;padding:12px 18px;background:#2563eb;color:#fff;text-decoration:none;border-radius:6px">Continue</a></p><p>If you did not request this, you can ignore this email.</p></div>`;
+    await transporter.sendMail({ from: process.env.EMAIL_FROM || 'NGO Management <noreply@ngo.org>', to, subject, html });
+};
+
+export const sendEmailVerification = (user) => sendSecurityEmail({
+    to: user.email,
+    subject: 'Verify your NGO account',
+    title: 'Verify your email address',
+    message: `Hello ${user.name}, verify your email address to activate your NGO account.`,
+    link: `${appBaseUrl()}/verify-email?token=${encodeURIComponent(user.verificationToken)}`,
+});
+
+export const sendPasswordReset = (user) => sendSecurityEmail({
+    to: user.email,
+    subject: 'Reset your NGO password',
+    title: 'Reset your password',
+    message: `Hello ${user.name}, this link expires in 30 minutes and can only be used once.`,
+    link: `${appBaseUrl()}/reset-password?token=${encodeURIComponent(user.resetToken)}`,
+});
