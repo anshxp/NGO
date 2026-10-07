@@ -15,8 +15,9 @@ This application handles donor, member, volunteer, beneficiary and financial inf
 - Authentication cookies are HttpOnly and are not readable by browser JavaScript.
 - Access tokens are short-lived.
 - Production cookies use Secure and SameSite protection.
-- Admin accounts should have MFA before launch.
-- Password reset and email verification should use single-use, expiring tokens.
+- Admin accounts require TOTP MFA in production. The first administrator login receives a short-lived setup token and must enroll an authenticator before a session is issued.
+- Password reset and email verification use single-use, expiring opaque tokens stored only as SHA-256 hashes in MongoDB.
+- Recovery endpoints are rate-limited and return generic responses to reduce account enumeration.
 
 ## Authorization
 
@@ -61,6 +62,8 @@ Maintain a documented process for credential rotation, account compromise, payme
 Do not launch until:
 
 - all P0 security findings are closed;
+- administrator MFA enrollment has been completed and tested;
+- email verification and password reset have been tested end-to-end;
 - payment flows have been tested with gateway sandbox/webhook scenarios;
 - authorization tests cover every sensitive REST route;
 - dependency and secret scans pass;
