@@ -2,7 +2,14 @@ import crypto from 'crypto';
 
 const base32Alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
 
-export const generateTotpSecret = () => crypto.randomBytes(20).toString('base64').replace(/[^A-Z2-7]/gi, '').toUpperCase().slice(0, 32);
+export const generateTotpSecret = () => {
+  const bytes = crypto.randomBytes(20);
+  let bits = '';
+  for (const byte of bytes) bits += byte.toString(2).padStart(8, '0');
+  let secret = '';
+  for (let i = 0; i < bits.length; i += 5) secret += base32Alphabet[parseInt(bits.slice(i, i + 5).padEnd(5, '0'), 2)];
+  return secret;
+};
 
 const base32Decode = (input) => {
   const normalized = String(input || '').replace(/=+$/g, '').toUpperCase();
