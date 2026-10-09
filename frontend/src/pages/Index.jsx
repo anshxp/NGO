@@ -17,7 +17,17 @@ const Index = () => (
   <div className="min-h-screen">
     <Navigation />
     <HeroCarousel />
-    <section className="py-12 bg-card border-y border-border"><div className="container mx-auto px-4"><ImpactCounter /></div></section>
+    <section className="py-12 bg-card border-y border-border">
+      <div className="container mx-auto px-4">
+        <ImpactCounter
+          end={500}
+          duration={2000}
+          suffix="+"
+          label="Volunteers"
+          icon={<Users className="w-7 h-7 text-white" />}
+        />
+      </div>
+    </section>
     <section className="py-10 bg-secondary/30"><div className="container mx-auto px-4"><QuickLinksSection /></div></section>
     <section className="py-16 md:py-24"><div className="container mx-auto px-4"><div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center"><div className="animate-fade-in"><span className="inline-block text-sm font-semibold text-primary uppercase tracking-widest mb-3">Who We Are</span><h2 className="text-3xl md:text-5xl font-bold text-foreground mb-6 leading-tight">A Movement Built on <span className="text-primary">Compassion</span></h2><p className="text-muted-foreground text-lg mb-5 leading-relaxed">Divy Shrishti is a registered NGO working since 2015 to uplift marginalized communities through education, health care, women empowerment, and environmental sustainability.</p><p className="text-muted-foreground text-base mb-8 leading-relaxed">With a dedicated team of over 500 volunteers and strong community partnerships, we deliver impactful programs that change lives and build futures.</p><div className="flex flex-col sm:flex-row gap-4"><NavLink to="/about"><Button className="bg-gradient-primary hover:opacity-90 text-primary-foreground gap-2">Our Story <ArrowRight className="w-4 h-4" /></Button></NavLink><NavLink to="/get-involved"><Button variant="outline" className="gap-2 border-primary text-primary hover:bg-primary hover:text-primary-foreground"><Users className="w-4 h-4" /> Volunteer With Us</Button></NavLink></div></div><div className="relative"><div className="rounded-2xl overflow-hidden shadow-large"><img src={heroVolunteersImage} alt="Divy Shrishti volunteers" loading="lazy" className="w-full h-96 object-cover" /></div><div className="absolute -bottom-6 -left-6 bg-background rounded-xl shadow-large border border-border p-4 flex items-center gap-3"><div className="w-12 h-12 rounded-full bg-gradient-primary flex items-center justify-center text-primary-foreground"><Star className="w-5 h-5" /></div><div><p className="font-bold text-foreground text-xl">10+ Years</p><p className="text-muted-foreground text-sm">Of Community Service</p></div></div></div></div></div></section>
     <section className="py-16 md:py-24 bg-secondary/20"><div className="container mx-auto px-4"><div className="text-center mb-12"><span className="inline-block text-sm font-semibold text-primary uppercase tracking-widest mb-3">What We Do</span><h2 className="text-3xl md:text-5xl font-bold text-foreground mb-4">Our Core Programs</h2><p className="text-muted-foreground text-lg max-w-2xl mx-auto">Comprehensive initiatives designed to create lasting, measurable change across communities.</p></div><ProgramSections /><div className="text-center mt-10"><NavLink to="/programs"><Button variant="outline" className="border-primary text-primary hover:bg-primary hover:text-primary-foreground gap-2">View All Programs <ArrowRight className="w-4 h-4" /></Button></NavLink></div></div></section>
@@ -28,4 +38,5 @@ const Index = () => (
     <FloatingButtons /><Footer />
   </div>
 );
+
 export default Index;
