@@ -13,7 +13,7 @@ import { authAPI } from '@/lib/apiClient';
 
 const Login = () => {
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, acceptUser } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [mfaCode, setMfaCode] = useState('');
@@ -23,7 +23,8 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const finishLogin = () => { toast.success('Login successful.'); setTimeout(() => navigate('/admin'), 300); };
+  const destinationFor = (user) => user?.role === 'admin' ? '/admin' : '/volunteer';
+  const finishLogin = (user) => { toast.success('Login successful.'); setTimeout(() => navigate(destinationFor(user), { replace: true }), 300); };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -32,7 +33,7 @@ const Login = () => {
     try {
       const data = await login(email, password, mfaCode);
       if (data?.mfaRequired) return;
-      finishLogin();
+      finishLogin(data.user);
     } catch (err) {
       const data = err.response?.data || {};
       if (data.mfaSetupRequired && data.setupToken) {
@@ -63,7 +64,7 @@ const Login = () => {
     setLoading(true);
     try {
       const response = await authAPI.mfaConfirm(setupToken, mfaCode);
-      if (response.data?.user) { toast.success('MFA enabled.'); navigate('/admin'); }
+      if (response.data?.user) { acceptUser(response.data.user); toast.success('MFA enabled.'); navigate('/admin', { replace: true }); }
     } catch (err) { setError(err.response?.data?.error || 'Invalid authenticator code.'); }
     finally { setLoading(false); }
   };
@@ -83,9 +84,9 @@ const Login = () => {
           <Card className="border-0 shadow-xl py-8">
             <CardHeader className="space-y-2">
               <div className="flex justify-center mb-4"><div className="bg-blue-100 p-3 rounded-lg"><Lock className="w-6 h-6 text-blue-600" /></div></div>
-              <CardTitle className="text-center text-2xl">{mode === 'mfa-setup' ? 'Secure Admin Account' : 'Admin Login'}</CardTitle>
+              <CardTitle className="text-center text-2xl">{mode === 'mfa-setup' ? 'Secure Admin Account' : 'Sign In'}</CardTitle>
               <CardDescription className="text-center">
-                {mode === 'mfa-setup' ? 'MFA is required for administrator accounts.' : 'Enter your credentials to access the admin dashboard'}
+                {mode === 'mfa-setup' ? 'MFA is required for administrator accounts.' : 'Sign in with your volunteer or administrator account.'}
               </CardDescription>
             </CardHeader>
             <CardContent>
