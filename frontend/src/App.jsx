@@ -29,7 +29,7 @@ import AdminReceipts from "./pages/AdminReceipts";
 import AdminReports from "./pages/AdminReports";
 import AdminProjects from "./pages/AdminProjects";
 import AdminCertificates from "./pages/AdminCertificates";
-import UserDashboard from "./pages/UserDashboard";
+import VolunteerDashboard from "./pages/VolunteerDashboard";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -66,7 +66,7 @@ const App = () => (
             <Route path="/verify-email" element={<VerifyEmail />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
-            <Route path="/volunteer" element={<ProtectedRoute allowedRoles={["volunteer"]}><UserDashboard /></ProtectedRoute>} />
+            <Route path="/volunteer" element={<ProtectedRoute allowedRoles={["volunteer"]}><VolunteerDashboard /></ProtectedRoute>} />
             <Route path="/admin" element={<ProtectedRoute allowedRoles={["admin"]}><AdminDashboard /></ProtectedRoute>} />
             <Route path="/admin/volunteers" element={<ProtectedRoute allowedRoles={["admin"]}><AdminVolunteers /></ProtectedRoute>} />
             <Route path="/admin/enquiries" element={<ProtectedRoute allowedRoles={["admin"]}><AdminEnquiries /></ProtectedRoute>} />
