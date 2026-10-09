@@ -129,6 +129,7 @@ router.post('/login', async (req, res) => {
     const user = await UserModel.findOne({ email }).select('+mfaSecretEncrypted');
     if (!user || !(await comparePassword(password, user.password))) return res.status(401).json({ error: 'Invalid credentials' });
     if (!user.isEmailVerified) return res.status(403).json({ error: 'Email verification required', emailVerificationRequired: true });
+    if (!['admin', 'volunteer'].includes(user.role)) return res.status(403).json({ error: 'Account role is unsupported. Contact the administrator to migrate this account.' });
     if (user.role === 'admin' && adminMfaRequired && !user.mfaEnabled) {
       const setupToken = generatePurposeToken(user._id.toString(), 'mfa-setup', '10m');
       return res.status(403).json({ error: 'Administrator MFA setup is required', mfaSetupRequired: true, setupToken });
