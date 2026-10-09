@@ -21,12 +21,14 @@ export const AuthProvider = ({ children }) => {
     return response.data;
   };
 
+  const acceptUser = (nextUser) => setUser(nextUser || null);
+
   const logout = async () => {
     try { await authAPI.logout(); } finally { setUser(null); }
   };
 
   return (
-    <AuthContext.Provider value={{ user, token: null, loading, login, logout, isAuthenticated: !!user }}>
+    <AuthContext.Provider value={{ user, token: null, loading, login, logout, acceptUser, isAuthenticated: !!user }}>
       {children}
     </AuthContext.Provider>
   );
