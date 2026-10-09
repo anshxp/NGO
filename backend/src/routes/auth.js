@@ -49,7 +49,7 @@ router.post('/register', async (req, res) => {
     const verificationToken = generateOpaqueToken();
     const user = await UserModel.create({
       name: String(name).trim(), email: normalizedEmail, password: await hashPassword(String(password)), phone: String(phone).trim(),
-      designation, dateOfBirth, address, referralCode: generateReferralCode(), referredBy: referrer?._id, membershipStatus: 'pending',
+      designation, dateOfBirth, address, role: 'volunteer', referralCode: generateReferralCode(), referredBy: referrer?._id, membershipStatus: 'pending',
       tokenVersion: 0, isEmailVerified: false, emailVerificationTokenHash: hashOpaqueToken(verificationToken), emailVerificationExpiresAt: emailTokenExpiry(),
     });
     if (referrer) await UserModel.updateOne({ _id: referrer._id }, { $inc: { totalReferrals: 1 } });
