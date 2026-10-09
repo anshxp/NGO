@@ -24,3 +24,16 @@ export const hashPassword = async (password) => { if (password.length < 12)
 export const comparePassword = async (password, hashedPassword) => bcrypt.compare(password, hashedPassword);
 export const generateReferralCode = () => `NGO${crypto.randomBytes(8).toString('hex').toUpperCase()}`;
 export const generateMembershipId = (userId) => `NGO${new Date().getFullYear()}${userId.substring(0, 4).toUpperCase()}${crypto.randomInt(0, 1000000).toString().padStart(6, '0')}`;
+
+export const generatePurposeToken = (userId, purpose, expiresIn = '10m') => jwt.sign({ userId, purpose }, getJwtSecret(), { algorithm: 'HS256', expiresIn, issuer: process.env.JWT_ISSUER || 'ngo-api', audience: process.env.JWT_AUDIENCE || 'ngo-web' });
+
+export const verifyPurposeToken = (token, purpose) => {
+    try {
+        const decoded = jwt.verify(token, getJwtSecret(), { algorithms: ['HS256'], issuer: process.env.JWT_ISSUER || 'ngo-api', audience: process.env.JWT_AUDIENCE || 'ngo-web' });
+        if (typeof decoded === 'string' || decoded.purpose !== purpose || !decoded.userId) throw new Error('Invalid purpose token');
+        return { userId: String(decoded.userId) };
+    } catch (_error) { throw new Error('Invalid or expired token'); }
+};
+
+export const hashOpaqueToken = (token) => crypto.createHash('sha256').update(String(token)).digest('hex');
+export const generateOpaqueToken = () => crypto.randomBytes(32).toString('hex');

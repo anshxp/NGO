@@ -13,6 +13,8 @@ This document deliberately separates repository hardening from deployment operat
 - REST/JSON architecture with obsolete GraphQL runtime removed.
 - Frontend/backend JavaScript migration completed.
 - HttpOnly JWT authentication with short-lived tokens, issuer/audience validation and token-version invalidation.
+- Email verification before authentication, single-use password reset, and rate-limited account recovery.
+- Production-enforced administrator TOTP MFA with encrypted secrets and short-lived enrollment tokens.
 - Production cookie, CORS and CSRF controls.
 - Helmet, rate limiting, request limits, request/response timeouts and disabled `x-powered-by`.
 - Health/readiness endpoints and MongoDB startup dependency.
@@ -64,7 +66,7 @@ MongoDB connection configuration is retained as provided by the project. The bac
 
 **Repository code:** production-oriented and CI-validated, subject to the latest workflow completing successfully.
 
-**Security hardening:** implemented at the application layer; operational security testing remains required.
+**Security hardening:** application-layer authentication and recovery hardening implemented; operational security testing remains required.
 
 **Payment:** implementation hardened; production activation/testing remains required.
 

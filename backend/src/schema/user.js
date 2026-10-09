@@ -23,6 +23,12 @@ const userSchema = new mongoose.Schema({
   isEmailVerified: { type: Boolean, default: false },
   lastLogin: { type: Date },
   tokenVersion: { type: Number, default: 0 },
+  emailVerificationTokenHash: { type: String, select: false },
+  emailVerificationExpiresAt: { type: Date, select: false },
+  passwordResetTokenHash: { type: String, select: false },
+  passwordResetExpiresAt: { type: Date, select: false },
+  mfaEnabled: { type: Boolean, default: false, index: true },
+  mfaSecretEncrypted: { type: String, select: false },
 }, { timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' } });
 
 export const UserModel = mongoose.model('User', userSchema);

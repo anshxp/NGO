@@ -16,7 +16,8 @@ A comprehensive MERN web application for managing non-governmental organization 
 - Member messaging and broadcasting
 - Beneficiary tracking and help-history auditing
 - Report generation
-- Role-based access control
+- Role-based access control with administrator TOTP MFA
+- Email verification and password recovery
 - 80G tax receipt generation
 
 ## Technology
@@ -68,7 +69,7 @@ Configure `VITE_API_URL` to point to the deployed REST API.
 
 ## Security
 
-Production configuration includes security headers, CORS restrictions, request limits, rate limiting, authentication and authorization middleware, origin protection for cookie-authenticated mutations, audit middleware, and production environment validation.
+Production configuration includes security headers, CORS restrictions, request limits, rate limiting, email verification, single-use password recovery, administrator TOTP MFA, authentication and authorization middleware, origin protection for cookie-authenticated mutations, audit middleware, and production environment validation.
 
 Secrets must remain in environment variables and must never be committed to the repository.
 

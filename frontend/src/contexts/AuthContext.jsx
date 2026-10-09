@@ -14,10 +14,11 @@ export const AuthProvider = ({ children }) => {
       .finally(() => setLoading(false));
   }, []);
 
-  const login = async (email, password) => {
-    const response = await authAPI.login(email.trim().toLowerCase(), password);
+  const login = async (email, password, mfaCode) => {
+    const response = await authAPI.login(email.trim().toLowerCase(), password, mfaCode);
     if (!response.data?.user) throw new Error('Invalid login response');
     setUser(response.data.user);
+    return response.data;
   };
 
   const logout = async () => {
