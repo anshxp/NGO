@@ -7,12 +7,13 @@ import {
   generateReferralCode,
   hashPassword,
   generateToken,
+  verifyToken,
   generatePurposeToken,
   verifyPurposeToken,
   hashOpaqueToken,
   generateOpaqueToken,
 } from '../utils/auth.js';
-import { authMiddleware } from '../middleware/auth.js';
+import { authMiddleware, getAuthToken } from '../middleware/auth.js';
 import { decryptTotpSecret, encryptTotpSecret, generateTotpSecret, verifyTotpCode, buildTotpUri } from '../utils/totp.js';
 import { sendEmailVerification, sendPasswordReset } from '../utils/email.js';
 
@@ -173,6 +174,23 @@ router.post('/logout', authMiddleware, async (req, res) => {
   return res.json({ success: true });
 });
 
-router.get('/me', authMiddleware, (req, res) => res.json({ user: safeUser(req.user) }));
+// Session bootstrap endpoint: an anonymous visitor is not an authentication error.
+router.get('/me', async (req, res) => {
+  const token = getAuthToken(req);
+  if (!token) return res.json({ user: null });
+
+  try {
+    const decoded = verifyToken(token);
+    const user = await UserModel.findById(decoded.userId).select('-password');
+    if (!user || Number(user.tokenVersion || 0) !== decoded.tokenVersion) {
+      clearCookie(res);
+      return res.json({ user: null });
+    }
+    return res.json({ user: safeUser(user) });
+  } catch (_error) {
+    clearCookie(res);
+    return res.json({ user: null });
+  }
+});
 
 export default router;
