@@ -9,7 +9,7 @@
   },
   "scripts": {
     "dev": "node --watch src/index.js",
-    "check": "node --check src/index.js",
+    "check": "node --check src/index.js && node --check src/routes/auth.js && node --check src/schema/user.js && node --check src/middleware/auth.js && node --check src/middleware/apiSecurity.js && node --check src/scripts/provisionAdmin.js && node --check src/scripts/migrateRoles.js",
     "test": "node --test",
     "start": "node src/index.js",
     "start:prod": "node src/index.js",
