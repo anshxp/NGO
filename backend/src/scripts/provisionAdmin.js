@@ -10,8 +10,8 @@ if (missing.length) {
   console.error(`Missing required environment variables: ${missing.join(', ')}`);
   process.exit(1);
 }
-if (String(process.env.ADMIN_PASSWORD).length < 12) {
-  console.error('ADMIN_PASSWORD must be at least 12 characters long.');
+if (String(process.env.ADMIN_PASSWORD).length < 8) {
+  console.error('ADMIN_PASSWORD must be at least 8 characters long.');
   process.exit(1);
 }
 
