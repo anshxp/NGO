@@ -25,7 +25,7 @@ export default function AdminReports() {
       const response = await fetch(`/api/admin/reports/${encodeURIComponent(reportType)}`, { method: 'GET', credentials: 'include', headers: { Accept: 'text/csv' } });
       if (!response.ok) {
         let message = `Report request failed (${response.status})`;
-        try { const data = await response.json(); message = data.error || message; } catch {}
+        try { const data = await response.json(); message = data.error || message; } catch (parseError) { console.debug('Report error response was not JSON', parseError); }
         throw new Error(message);
       }
       const blob = await response.blob();
