@@ -50,8 +50,8 @@ const Register = () => {
           <Card className="border-0 flex flex-col py-8 justify-around shadow-xl">
             <CardHeader className="space-y-2">
               <div className="flex justify-center mb-4"><div className="bg-blue-100 p-3 rounded-lg"><User className="w-6 h-6 text-blue-600" /></div></div>
-              <CardTitle className="text-center text-2xl">Create an Account</CardTitle>
-              <CardDescription className="text-center">Join our community as a volunteer or donor</CardDescription>
+              <CardTitle className="text-center text-2xl">Volunteer Registration</CardTitle>
+              <CardDescription className="text-center">Create your volunteer account</CardDescription>
             </CardHeader>
             <CardContent>
               {error && <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-start"><AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" /><p className="text-sm text-red-700 ml-2">{error}</p></div>}

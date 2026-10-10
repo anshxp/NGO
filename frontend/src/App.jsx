@@ -29,14 +29,17 @@ import AdminReceipts from "./pages/AdminReceipts";
 import AdminReports from "./pages/AdminReports";
 import AdminProjects from "./pages/AdminProjects";
 import AdminCertificates from "./pages/AdminCertificates";
+import VolunteerDashboard from "./pages/VolunteerDashboard";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
-const ProtectedRoute = ({ children }) => {
-  const { isAuthenticated, loading } = useAuth();
+const ProtectedRoute = ({ children, allowedRoles }) => {
+  const { user, isAuthenticated, loading } = useAuth();
   if (loading) return <div className="flex items-center justify-center min-h-screen"><div className="text-center"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4" /><p className="text-gray-600">Loading...</p></div></div>;
   if (!isAuthenticated) return <Navigate to="/login" replace />;
+  const roleHome = user?.role === 'admin' ? '/admin' : '/volunteer';
+  if (allowedRoles && !allowedRoles.includes(user?.role)) return <Navigate to={roleHome} replace />;
   return <>{children}</>;
 };
 
@@ -63,16 +66,17 @@ const App = () => (
             <Route path="/verify-email" element={<VerifyEmail />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
-            <Route path="/admin" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
-            <Route path="/admin/volunteers" element={<ProtectedRoute><AdminVolunteers /></ProtectedRoute>} />
-            <Route path="/admin/enquiries" element={<ProtectedRoute><AdminEnquiries /></ProtectedRoute>} />
-            <Route path="/admin/messages" element={<ProtectedRoute><AdminMessages /></ProtectedRoute>} />
-            <Route path="/admin/beneficiaries" element={<ProtectedRoute><AdminBeneficiaries /></ProtectedRoute>} />
-            <Route path="/admin/news" element={<ProtectedRoute><AdminNews /></ProtectedRoute>} />
-            <Route path="/admin/receipts" element={<ProtectedRoute><AdminReceipts /></ProtectedRoute>} />
-            <Route path="/admin/reports" element={<ProtectedRoute><AdminReports /></ProtectedRoute>} />
-            <Route path="/admin/projects" element={<ProtectedRoute><AdminProjects /></ProtectedRoute>} />
-            <Route path="/admin/certificates" element={<ProtectedRoute><AdminCertificates /></ProtectedRoute>} />
+            <Route path="/volunteer" element={<ProtectedRoute allowedRoles={["volunteer"]}><VolunteerDashboard /></ProtectedRoute>} />
+            <Route path="/admin" element={<ProtectedRoute allowedRoles={["admin"]}><AdminDashboard /></ProtectedRoute>} />
+            <Route path="/admin/volunteers" element={<ProtectedRoute allowedRoles={["admin"]}><AdminVolunteers /></ProtectedRoute>} />
+            <Route path="/admin/enquiries" element={<ProtectedRoute allowedRoles={["admin"]}><AdminEnquiries /></ProtectedRoute>} />
+            <Route path="/admin/messages" element={<ProtectedRoute allowedRoles={["admin"]}><AdminMessages /></ProtectedRoute>} />
+            <Route path="/admin/beneficiaries" element={<ProtectedRoute allowedRoles={["admin"]}><AdminBeneficiaries /></ProtectedRoute>} />
+            <Route path="/admin/news" element={<ProtectedRoute allowedRoles={["admin"]}><AdminNews /></ProtectedRoute>} />
+            <Route path="/admin/receipts" element={<ProtectedRoute allowedRoles={["admin"]}><AdminReceipts /></ProtectedRoute>} />
+            <Route path="/admin/reports" element={<ProtectedRoute allowedRoles={["admin"]}><AdminReports /></ProtectedRoute>} />
+            <Route path="/admin/projects" element={<ProtectedRoute allowedRoles={["admin"]}><AdminProjects /></ProtectedRoute>} />
+            <Route path="/admin/certificates" element={<ProtectedRoute allowedRoles={["admin"]}><AdminCertificates /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
