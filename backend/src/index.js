@@ -22,9 +22,22 @@ const isProduction = process.env.NODE_ENV === 'production';
 const PORT = Number(process.env.PORT || 7856);
 if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) throw new Error('JWT_SECRET must be configured and at least 32 characters long');
 if (isProduction && !process.env.FRONTEND_URL) throw new Error('FRONTEND_URL must be configured in production');
-const allowedOrigins = (process.env.FRONTEND_URL || '').split(',').map((origin) => origin.trim()).filter(Boolean);
+const normalizeOrigin = (value) => {
+  try { return new URL(value).origin; } catch { return null; }
+};
+const allowedOrigins = (process.env.FRONTEND_URL || '').split(',').map((origin) => normalizeOrigin(origin.trim())).filter(Boolean);
 if (!isProduction) allowedOrigins.push('http://localhost:5173', 'http://localhost:8080', 'http://127.0.0.1:5173', 'http://127.0.0.1:8080');
-const corsOptions = { origin: (origin, callback) => { if (!origin || allowedOrigins.includes(origin)) return callback(null, true); return callback(new Error('CORS origin denied')); }, credentials: true, methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'], allowedHeaders: ['Content-Type', 'Authorization'] };
+const corsOptions = {
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(normalizeOrigin(origin))) return callback(null, true);
+    const error = new Error('CORS origin denied');
+    error.code = 'CORS_ORIGIN_DENIED';
+    return callback(error);
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+};
 const app = express();
 app.disable('x-powered-by');
 const trustProxy = process.env.TRUST_PROXY?.trim();
@@ -67,6 +80,14 @@ app.use('/api/admin', adminRouter);
 app.use('/api', paymentRouter);
 app.use('/api', apiRouter);
 app.use('/api', userFeaturesRouter);
-app.use((err, _req, res, _next) => { console.error('Unhandled HTTP error', err instanceof Error ? err.message : 'unknown error'); if (!res.headersSent) res.status(500).json({ error: 'Internal server error' }); });
+app.use((err, _req, res, _next) => {
+  const isCorsRejection = err?.code === 'CORS_ORIGIN_DENIED';
+  if (isCorsRejection) {
+    console.warn('Rejected request from an unapproved CORS origin');
+  } else {
+    console.error('Unhandled HTTP error', err instanceof Error ? err.stack : 'unknown error');
+  }
+  if (!res.headersSent) res.status(isCorsRejection ? 403 : 500).json({ error: isCorsRejection ? 'Request origin denied' : 'Internal server error' });
+});
 async function start() { try { await connectDB(); app.listen(PORT, () => console.log(`NGO API listening on port ${PORT}`)); } catch (_err) { console.error('Error starting server'); process.exit(1); } }
 start();
