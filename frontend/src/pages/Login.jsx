@@ -101,7 +101,7 @@ const Login = () => {
               ) : (
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div className="space-y-2"><Label htmlFor="email" className="flex items-center gap-2"><Mail className="w-4 h-4" />Email Address</Label><Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required disabled={loading} /></div>
-                  <div className="space-y-2"><Label htmlFor="password" className="flex items-center gap-2"><Lock className="w-4 h-4" />Password</Label><Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} minLength={12} required disabled={loading} /></div>
+                  <div className="space-y-2"><Label htmlFor="password" className="flex items-center gap-2"><Lock className="w-4 h-4" />Password</Label><Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required disabled={loading} autoComplete="current-password" /></div>
                   {(mode === 'mfa-login') && <div className="space-y-2"><Label htmlFor="mfaCode" className="flex items-center gap-2"><ShieldCheck className="w-4 h-4" />MFA code</Label><Input id="mfaCode" inputMode="numeric" maxLength={6} value={mfaCode} onChange={(e) => setMfaCode(e.target.value.replace(/\D/g, ''))} required disabled={loading} /></div>}
                   <Button type="submit" className="w-full" disabled={loading}>{loading ? 'Authenticating...' : 'Login'}</Button>
                   {mode === 'verification' && <Button type="button" variant="outline" className="w-full" onClick={resendVerification} disabled={loading}>Resend verification email</Button>}
