@@ -1,96 +1,76 @@
-import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/components/ui/use-toast';
 import AdminLayout from '@/components/AdminLayout';
 import { FileText, Download, Search, DollarSign, TrendingUp } from 'lucide-react';
+import { receiptAPI } from '@/lib/apiClient';
+
 export default function AdminReceipts() {
-    const [receipts, setReceipts] = useState([]);
-    const [filteredReceipts, setFilteredReceipts] = useState([]);
-    const [searchTerm, setSearchTerm] = useState('');
-    const [filterType, setFilterType] = useState('all');
-    const [loading, setLoading] = useState(true);
-    const { toast } = useToast();
-    useEffect(() => {
-        fetchReceipts();
-    }, []);
-    useEffect(() => {
-        filterReceipts();
-    }, [searchTerm, filterType, receipts]);
-    const fetchReceipts = async () => {
-        try {
-            setLoading(true);
-            const authToken = localStorage.getItem('authToken');
-            const response = await fetch(`http://localhost:7856/graphql`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    ...(authToken && { 'Authorization': `Bearer ${authToken}` })
-                },
-                body: JSON.stringify({
-                    query: `query GetReceipts {
-                            getReceipts {
-                                id
-                                receiptId
-                                receiptType
-                                amount
-                                date
-                                status
-                                pdfUrl
-                            }
-                        }`
-                })
-            });
-            const result = await response.json();
-            if (result.errors) {
-                console.error('GraphQL errors:', result.errors);
-                setReceipts([]);
-                toast({
-                    title: '⚠️ Info',
-                    description: 'No receipts found',
-                    variant: 'destructive'
-                });
-            }
-            else if (result.data?.getReceipts) {
-                setReceipts(result.data.getReceipts);
-            }
-            else {
-                setReceipts([]);
-            }
-        }
-        catch (error) {
-            console.error('Error fetching receipts:', error);
-            setReceipts([]);
-            toast({
-                title: '❌ Error',
-                description: 'Failed to fetch receipts. Please try again.',
-                variant: 'destructive'
-            });
-        }
-        finally {
-            setLoading(false);
-        }
-    };
-    const filterReceipts = () => {
-        let filtered = receipts;
-        if (filterType !== 'all') {
-            filtered = filtered.filter(r => r.receiptType === filterType);
-        }
-        if (searchTerm) {
-            filtered = filtered.filter(r => r.receiptId.toLowerCase().includes(searchTerm.toLowerCase()));
-        }
-        setFilteredReceipts(filtered);
-    };
-    const typeColors = {
-        membership: 'bg-blue-100 text-blue-800',
-        donation: 'bg-green-100 text-green-800',
-        event: 'bg-purple-100 text-purple-800',
-        cash_donation: 'bg-orange-100 text-orange-800'
-    };
-    const totalAmount = filteredReceipts.reduce((sum, r) => sum + r.amount, 0);
-    const donationCount = filteredReceipts.filter(r => r.receiptType === 'donation').length;
-    const membershipCount = filteredReceipts.filter(r => r.receiptType === 'membership').length;
-    return (_jsx(AdminLayout, { children: _jsxs("div", { className: "space-y-8", children: [_jsxs("div", { className: "mb-8", children: [_jsx("h1", { className: "text-4xl font-bold", children: "\uD83E\uDDFE Receipt Management" }), _jsx("p", { className: "text-gray-600 mt-2", children: "View and manage all receipts in one place" })] }), _jsxs("div", { className: "grid grid-cols-1 md:grid-cols-3 gap-4", children: [_jsx(Card, { className: "border-0 shadow-lg bg-gradient-to-br from-blue-50 to-blue-100", children: _jsx(CardContent, { className: "p-6", children: _jsxs("div", { className: "flex items-center justify-between", children: [_jsxs("div", { children: [_jsx("p", { className: "text-sm text-gray-600", children: "Total Receipts" }), _jsx("p", { className: "text-3xl font-bold text-blue-600", children: filteredReceipts.length })] }), _jsx(FileText, { className: "w-12 h-12 text-blue-300" })] }) }) }), _jsx(Card, { className: "border-0 shadow-lg bg-gradient-to-br from-green-50 to-green-100", children: _jsx(CardContent, { className: "p-6", children: _jsxs("div", { className: "flex items-center justify-between", children: [_jsxs("div", { children: [_jsx("p", { className: "text-sm text-gray-600", children: "Total Amount" }), _jsxs("p", { className: "text-3xl font-bold text-green-600", children: ["\u20B9", totalAmount.toLocaleString()] })] }), _jsx(DollarSign, { className: "w-12 h-12 text-green-300" })] }) }) }), _jsx(Card, { className: "border-0 shadow-lg bg-gradient-to-br from-orange-50 to-orange-100", children: _jsx(CardContent, { className: "p-6", children: _jsxs("div", { className: "flex items-center justify-between", children: [_jsxs("div", { children: [_jsx("p", { className: "text-sm text-gray-600", children: "Donations" }), _jsx("p", { className: "text-3xl font-bold text-orange-600", children: donationCount })] }), _jsx(TrendingUp, { className: "w-12 h-12 text-orange-300" })] }) }) })] }), _jsxs(Card, { className: "border-0 shadow-lg", children: [_jsx(CardHeader, { className: "bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-t-lg", children: _jsxs("div", { className: "flex items-center gap-3", children: [_jsx(Search, { className: "w-5 h-5" }), _jsx(CardTitle, { children: "Search & Filter" })] }) }), _jsx(CardContent, { className: "pt-6", children: _jsxs("div", { className: "grid grid-cols-1 md:grid-cols-2 gap-4", children: [_jsxs("div", { children: [_jsx("label", { className: "text-sm font-medium flex items-center gap-2", children: "\uD83D\uDD0D Search Receipt ID" }), _jsx(Input, { placeholder: "Search...", value: searchTerm, onChange: (e) => setSearchTerm(e.target.value), className: "mt-2" })] }), _jsxs("div", { children: [_jsx("label", { className: "text-sm font-medium flex items-center gap-2", children: "\uD83C\uDFF7\uFE0F Receipt Type" }), _jsxs("select", { value: filterType, onChange: (e) => setFilterType(e.target.value), className: "w-full mt-2 px-3 py-2 border border-gray-300 rounded-lg bg-white", children: [_jsx("option", { value: "all", children: "All Types" }), _jsx("option", { value: "membership", children: "Membership" }), _jsx("option", { value: "donation", children: "Donation" }), _jsx("option", { value: "event", children: "Event" }), _jsx("option", { value: "cash_donation", children: "Cash Donation" })] })] })] }) })] }), _jsxs(Card, { className: "border-0 shadow-lg", children: [_jsx(CardHeader, { className: "bg-gradient-to-r from-green-500 to-green-600 text-white rounded-t-lg", children: _jsxs("div", { className: "flex items-center gap-3 justify-between", children: [_jsxs("div", { className: "flex items-center gap-3", children: [_jsx(FileText, { className: "w-5 h-5" }), _jsx(CardTitle, { children: "Receipts List" })] }), _jsxs(Badge, { className: "bg-white text-green-600", children: [filteredReceipts.length, " Total"] })] }) }), _jsx(CardContent, { className: "pt-6", children: loading ? (_jsxs("div", { className: "text-center py-12", children: [_jsx("div", { className: "animate-spin rounded-full h-12 w-12 border-b-2 border-green-500 mx-auto mb-4" }), _jsx("p", { className: "text-gray-600", children: "Loading receipts..." })] })) : filteredReceipts.length === 0 ? (_jsxs("div", { className: "text-center py-12", children: [_jsx(FileText, { className: "w-12 h-12 text-gray-300 mx-auto mb-4" }), _jsx("p", { className: "text-gray-500", children: "No receipts found" })] })) : (_jsx("div", { className: "overflow-x-auto", children: _jsxs("table", { className: "w-full", children: [_jsx("thead", { children: _jsxs("tr", { className: "border-b bg-gray-50", children: [_jsx("th", { className: "text-left py-3 px-4 font-semibold", children: "Receipt ID" }), _jsx("th", { className: "text-left py-3 px-4 font-semibold", children: "Type" }), _jsx("th", { className: "text-left py-3 px-4 font-semibold", children: "Amount" }), _jsx("th", { className: "text-left py-3 px-4 font-semibold", children: "Date" }), _jsx("th", { className: "text-left py-3 px-4 font-semibold", children: "Status" }), _jsx("th", { className: "text-left py-3 px-4 font-semibold", children: "Action" })] }) }), _jsx("tbody", { children: filteredReceipts.map((receipt) => (_jsxs("tr", { className: "border-b hover:bg-gray-50 transition-colors", children: [_jsx("td", { className: "py-3 px-4 font-medium text-gray-800", children: receipt.receiptId }), _jsx("td", { className: "py-3 px-4", children: _jsx(Badge, { className: typeColors[receipt.receiptType], children: receipt.receiptType.replace('_', ' ') }) }), _jsxs("td", { className: "py-3 px-4 font-semibold text-green-600", children: ["\u20B9", receipt.amount.toLocaleString()] }), _jsx("td", { className: "py-3 px-4 text-gray-600", children: new Date(receipt.date).toLocaleDateString() }), _jsx("td", { className: "py-3 px-4", children: _jsx(Badge, { className: receipt.status === 'issued' ? 'bg-gradient-to-r from-green-500 to-green-600 text-white' : 'bg-gradient-to-r from-yellow-500 to-yellow-600 text-white', children: receipt.status }) }), _jsx("td", { className: "py-3 px-4", children: receipt.pdfUrl && (_jsxs("a", { href: receipt.pdfUrl, target: "_blank", rel: "noopener noreferrer", className: "inline-flex items-center gap-2 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-3 py-1 rounded text-sm transition-all", children: [_jsx(Download, { className: "w-4 h-4" }), "View PDF"] })) })] }, receipt._id))) })] }) })) })] })] }) }));
+  const [receipts, setReceipts] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterType, setFilterType] = useState('all');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const { toast } = useToast();
+
+  const fetchReceipts = useCallback(async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const response = await receiptAPI.getReceipts();
+      setReceipts(Array.isArray(response.data) ? response.data : []);
+    } catch (err) {
+      const message = err.response?.data?.error || 'Unable to load receipts. Check the API and database connection.';
+      setError(message);
+      toast({ title: 'Could not load receipts', description: message, variant: 'destructive' });
+    } finally {
+      setLoading(false);
+    }
+  }, [toast]);
+
+  useEffect(() => { void fetchReceipts(); }, [fetchReceipts]);
+
+  const filteredReceipts = useMemo(() => receipts.filter((receipt) => {
+    const typeMatches = filterType === 'all' || receipt.receiptType === filterType;
+    const idMatches = String(receipt.receiptId || '').toLowerCase().includes(searchTerm.toLowerCase());
+    return typeMatches && idMatches;
+  }), [receipts, searchTerm, filterType]);
+
+  const totalAmount = filteredReceipts.reduce((sum, receipt) => sum + (Number(receipt.amount) || 0), 0);
+  const donationCount = filteredReceipts.filter((receipt) => receipt.receiptType === 'donation').length;
+  const typeColors = { membership: 'bg-blue-100 text-blue-800', donation: 'bg-green-100 text-green-800', event: 'bg-purple-100 text-purple-800', cash_donation: 'bg-orange-100 text-orange-800' };
+
+  return (
+    <AdminLayout>
+      <div className="space-y-8">
+        <header><h1 className="text-4xl font-bold">Receipt Management</h1><p className="mt-2 text-gray-600">View and manage receipts issued by the organisation.</p></header>
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+          <Card><CardContent className="flex items-center justify-between p-6"><div><p className="text-sm text-gray-600">Total receipts</p><p className="text-3xl font-bold">{filteredReceipts.length}</p></div><FileText className="h-10 w-10 text-blue-500" /></CardContent></Card>
+          <Card><CardContent className="flex items-center justify-between p-6"><div><p className="text-sm text-gray-600">Total amount</p><p className="text-3xl font-bold">₹{totalAmount.toLocaleString('en-IN')}</p></div><DollarSign className="h-10 w-10 text-green-500" /></CardContent></Card>
+          <Card><CardContent className="flex items-center justify-between p-6"><div><p className="text-sm text-gray-600">Donation receipts</p><p className="text-3xl font-bold">{donationCount}</p></div><TrendingUp className="h-10 w-10 text-orange-500" /></CardContent></Card>
+        </div>
+        <Card>
+          <CardHeader><CardTitle className="flex items-center gap-2"><Search className="h-5 w-5" /> Search and filter</CardTitle></CardHeader>
+          <CardContent className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            <Input aria-label="Search receipt ID" placeholder="Search receipt ID…" value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} />
+            <select aria-label="Receipt type" value={filterType} onChange={(event) => setFilterType(event.target.value)} className="rounded-md border border-gray-300 bg-white px-3 py-2">
+              <option value="all">All types</option><option value="membership">Membership</option><option value="donation">Donation</option><option value="event">Event</option><option value="cash_donation">Cash donation</option>
+            </select>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader><CardTitle>Receipts</CardTitle></CardHeader>
+          <CardContent>
+            {loading ? <p className="py-8 text-center text-gray-500">Loading receipts…</p> : error ? <div className="py-8 text-center"><p className="text-red-600">{error}</p><button className="mt-3 rounded bg-slate-900 px-4 py-2 text-white" onClick={() => void fetchReceipts()}>Retry</button></div> : filteredReceipts.length === 0 ? <p className="py-8 text-center text-gray-500">No receipts match these filters.</p> : (
+              <div className="overflow-x-auto"><table className="w-full"><thead><tr className="border-b bg-gray-50 text-left"><th className="p-3">Receipt ID</th><th className="p-3">Type</th><th className="p-3">Amount</th><th className="p-3">Date</th><th className="p-3">Status</th><th className="p-3">PDF</th></tr></thead>
+                <tbody>{filteredReceipts.map((receipt) => <tr key={receipt._id || receipt.receiptId} className="border-b"><td className="p-3 font-medium">{receipt.receiptId}</td><td className="p-3"><Badge className={typeColors[receipt.receiptType] || 'bg-gray-100 text-gray-800'}>{String(receipt.receiptType || 'unknown').replace('_', ' ')}</Badge></td><td className="p-3">₹{(Number(receipt.amount) || 0).toLocaleString('en-IN')}</td><td className="p-3">{receipt.date ? new Date(receipt.date).toLocaleDateString('en-IN') : '—'}</td><td className="p-3">{receipt.status || '—'}</td><td className="p-3">{receipt.pdfUrl ? <a href={receipt.pdfUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 text-blue-700 underline"><Download className="h-4 w-4" /> View PDF</a> : '—'}</td></tr>)}</tbody>
+              </table></div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    </AdminLayout>
+  );
 }
