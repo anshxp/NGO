@@ -1,4 +1,3 @@
-import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 import React, { useState } from 'react';
 import AdminLayout from '@/components/AdminLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,44 +6,53 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useForm } from 'react-hook-form';
-import { Form, FormControl, FormField, FormItem, FormLabel } from '@/components/ui/form';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useToast } from '@/components/ui/use-toast';
 import { Send, Mail, Users } from 'lucide-react';
+import { messageAPI } from '@/lib/apiClient';
+
 export default function AdminMessages() {
-    const form = useForm();
-    const { toast } = useToast();
-    const [loading, setLoading] = useState(false);
-    const [sendToAll, setSendToAll] = useState(false);
-    const onSubmit = async (data) => {
-        setLoading(true);
-        try {
-            const response = await fetch('/api/admin/messages', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    ...data,
-                    sendToAll
-                })
-            });
-            if (response.ok) {
-                toast({
-                    title: '✅ Success',
-                    description: `Message ${sendToAll ? 'sent to all members' : 'sent to member'}`
-                });
-                form.reset();
-                setSendToAll(false);
-            }
-        }
-        catch (error) {
-            toast({
-                title: '❌ Error',
-                description: 'Failed to send message',
-                variant: 'destructive'
-            });
-        }
-        finally {
-            setLoading(false);
-        }
-    };
-    return (_jsx(AdminLayout, { children: _jsxs("div", { className: "space-y-8", children: [_jsxs("div", { className: "mb-8", children: [_jsx("h1", { className: "text-4xl font-bold text-gray-900 mb-2", children: "\uD83D\uDCAC Send Messages" }), _jsx("p", { className: "text-gray-600", children: "Send notifications and messages to members directly to their dashboard and email" })] }), _jsxs(Card, { className: "border-0 shadow-lg max-w-2xl", children: [_jsx(CardHeader, { className: "border-b border-gray-200 pb-6", children: _jsxs("div", { className: "flex items-center gap-3", children: [_jsx("div", { className: "p-3 bg-gradient-primary rounded-lg", children: _jsx(Mail, { className: "w-6 h-6 text-white" }) }), _jsxs("div", { children: [_jsx(CardTitle, { className: "text-2xl", children: "New Message" }), _jsx(CardDescription, { children: "Messages will be emailed and shown in member dashboard" })] })] }) }), _jsx(CardContent, { className: "pt-8", children: _jsx(Form, { ...form, children: _jsxs("form", { onSubmit: form.handleSubmit(onSubmit), className: "space-y-6", children: [_jsx("div", { className: "bg-blue-50 p-4 rounded-lg border border-blue-200", children: _jsx(FormField, { control: form.control, name: "sendToAll", render: () => (_jsxs(FormItem, { className: "flex items-center space-x-3", children: [_jsx(Checkbox, { checked: sendToAll, onCheckedChange: (checked) => setSendToAll(checked), className: "w-5 h-5" }), _jsxs("div", { children: [_jsxs(FormLabel, { className: "cursor-pointer font-semibold text-gray-900 flex items-center gap-2", children: [_jsx(Users, { className: "w-4 h-4" }), "Send to all members"] }), _jsx("p", { className: "text-xs text-gray-600 mt-1", children: "Check this to send to every member at once" })] })] })) }) }), !sendToAll && (_jsx(FormField, { control: form.control, name: "recipientId", rules: { required: sendToAll ? false : 'Select a member' }, render: ({ field }) => (_jsxs(FormItem, { children: [_jsx(FormLabel, { className: "text-base font-semibold", children: "\uD83D\uDCE7 Select Member" }), _jsx(FormControl, { children: _jsx(Input, { placeholder: "Search member by name or email...", ...field, className: "h-10" }) })] })) })), _jsx(FormField, { control: form.control, name: "title", rules: { required: 'Title is required' }, render: ({ field }) => (_jsxs(FormItem, { children: [_jsx(FormLabel, { className: "text-base font-semibold", children: "\uD83D\uDCDD Message Subject" }), _jsx(FormControl, { children: _jsx(Input, { placeholder: "e.g., Important Update, New Event, etc.", ...field, className: "h-10" }) })] })) }), _jsx(FormField, { control: form.control, name: "content", rules: { required: 'Message is required' }, render: ({ field }) => (_jsxs(FormItem, { children: [_jsx(FormLabel, { className: "text-base font-semibold", children: "\uD83D\uDCAD Message Content" }), _jsx(FormControl, { children: _jsx(Textarea, { placeholder: "Type your message here... Keep it clear and professional.", className: "min-h-40 resize-none", ...field }) })] })) }), _jsxs(Button, { type: "submit", disabled: loading, className: "w-full h-11 bg-gradient-primary hover:opacity-90 text-white font-semibold flex items-center justify-center gap-2 text-base", children: [_jsx(Send, { className: "w-5 h-5" }), loading ? 'Sending...' : 'Send Message'] })] }) }) })] }), _jsx(Card, { className: "border-0 shadow-lg bg-gradient-to-r from-cyan-50 to-blue-50 max-w-2xl", children: _jsx(CardContent, { className: "pt-6", children: _jsxs("div", { className: "space-y-3", children: [_jsx("p", { className: "font-semibold text-gray-900", children: "\uD83D\uDCA1 Tips for Effective Messages:" }), _jsxs("ul", { className: "list-disc list-inside space-y-2 text-sm text-gray-700", children: [_jsx("li", { children: "Keep messages concise and clear" }), _jsx("li", { children: "Use a specific subject line" }), _jsx("li", { children: "Messages will be sent via email and appear in member dashboard" }), _jsx("li", { children: "You can target individual members or broadcast to all" })] })] }) }) })] }) }));
+  const form = useForm({ defaultValues: { recipientId: '', title: '', content: '' } });
+  const { toast } = useToast();
+  const [loading, setLoading] = useState(false);
+  const [sendToAll, setSendToAll] = useState(false);
+
+  const onSubmit = async (data) => {
+    setLoading(true);
+    try {
+      await messageAPI.sendMessage({ ...data, recipientId: sendToAll ? undefined : data.recipientId.trim(), sendToAll });
+      toast({ title: 'Message sent', description: sendToAll ? 'The message was broadcast to all members.' : 'The message was sent to the selected member.' });
+      form.reset({ recipientId: '', title: '', content: '' });
+      setSendToAll(false);
+    } catch (error) {
+      toast({ title: 'Message failed', description: error.response?.data?.error || 'Unable to send the message. Check the recipient and try again.', variant: 'destructive' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <AdminLayout>
+      <div className="space-y-8">
+        <header><h1 className="mb-2 text-4xl font-bold text-gray-900">Send Messages</h1><p className="text-gray-600">Send dashboard notifications to individual members or all members.</p></header>
+        <Card className="max-w-2xl border-0 shadow-lg">
+          <CardHeader className="border-b border-gray-200 pb-6"><div className="flex items-center gap-3"><div className="rounded-lg bg-blue-600 p-3"><Mail className="h-6 w-6 text-white" /></div><div><CardTitle className="text-2xl">New Message</CardTitle><CardDescription>Individual messages require the member's email address or database ID.</CardDescription></div></div></CardHeader>
+          <CardContent className="pt-8">
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                <div className="flex items-start gap-3 rounded-lg border border-blue-200 bg-blue-50 p-4">
+                  <Checkbox id="send-to-all" checked={sendToAll} onCheckedChange={(checked) => setSendToAll(checked === true)} />
+                  <div><label htmlFor="send-to-all" className="flex cursor-pointer items-center gap-2 font-semibold text-gray-900"><Users className="h-4 w-4" />Send to all members</label><p className="mt-1 text-xs text-gray-600">Broadcast this message to all members.</p></div>
+                </div>
+                {!sendToAll && <FormField control={form.control} name="recipientId" rules={{ required: 'Member email or ID is required' }} render={({ field }) => <FormItem><FormLabel>Member email or ID</FormLabel><FormControl><Input {...field} autoComplete="off" placeholder="member@example.com or member ID" /></FormControl><FormMessage /></FormItem>} />}
+                <FormField control={form.control} name="title" rules={{ required: 'Subject is required' }} render={({ field }) => <FormItem><FormLabel>Subject</FormLabel><FormControl><Input {...field} placeholder="e.g. Important update" /></FormControl><FormMessage /></FormItem>} />
+                <FormField control={form.control} name="content" rules={{ required: 'Message is required' }} render={({ field }) => <FormItem><FormLabel>Message</FormLabel><FormControl><Textarea {...field} placeholder="Write a clear message…" className="min-h-40 resize-y" /></FormControl><FormMessage /></FormItem>} />
+                <Button type="submit" disabled={loading} className="w-full">{loading ? 'Sending…' : <><Send className="mr-2 h-4 w-4" />Send Message</>}</Button>
+              </form>
+            </Form>
+          </CardContent>
+        </Card>
+      </div>
+    </AdminLayout>
+  );
 }
