@@ -52,7 +52,7 @@ npm install
 npm run dev
 ```
 
-Open the Vite development URL shown by the terminal. The Vite development server proxies `/api` requests to the local backend on port `7856`.
+Open the Vite development URL shown by the terminal. The Vite development server proxies `/api` requests to the backend origin configured by `VITE_API_URL`, or port `7856` when it is not set.
 
 ## REST smoke checks
 
