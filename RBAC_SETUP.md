@@ -23,7 +23,7 @@ Set these environment variables in the backend process environment (do not commi
 
 - `ADMIN_NAME`
 - `ADMIN_EMAIL`
-- `ADMIN_PASSWORD` (at least 12 characters)
+- `ADMIN_PASSWORD` (at least 8 characters)
 - `ADMIN_PHONE`
 
 Then, from the `backend` directory, run:
