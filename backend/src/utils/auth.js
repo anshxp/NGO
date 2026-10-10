@@ -19,8 +19,8 @@ export const verifyToken = (token) => {
         throw new Error('Invalid or expired token');
     }
 };
-export const hashPassword = async (password) => { if (password.length < 12)
-    throw new Error('Password must be at least 12 characters long'); return bcrypt.hash(password, await bcrypt.genSalt(12)); };
+export const hashPassword = async (password) => { if (password.length < 8)
+    throw new Error('Password must be at least 8 characters long'); return bcrypt.hash(password, await bcrypt.genSalt(12)); };
 export const comparePassword = async (password, hashedPassword) => bcrypt.compare(password, hashedPassword);
 export const generateReferralCode = () => `NGO${crypto.randomBytes(8).toString('hex').toUpperCase()}`;
 export const generateMembershipId = (userId) => `NGO${new Date().getFullYear()}${userId.substring(0, 4).toUpperCase()}${crypto.randomInt(0, 1000000).toString().padStart(6, '0')}`;
