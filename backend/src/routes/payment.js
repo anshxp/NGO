@@ -105,7 +105,13 @@ router.post('/donations/order', async (req, res) => {
       donation: { id: donation._id, orderId: order.id, amount: numericAmount, payment_status: donation.payment_status },
       order: { id: order.id, amount: order.amount, currency: order.currency, keyId: process.env.RAZORPAY_KEY_ID },
     });
-  } catch (_error) {
+  } catch (error) {
+    // Log only non-sensitive diagnostic metadata; never log request bodies or payment credentials.
+    console.error('Donation order creation failed', {
+      name: error?.name,
+      code: error?.code || error?.error?.code,
+      statusCode: error?.statusCode || error?.error?.statusCode,
+    });
     return res.status(502).json({ error: 'Unable to create payment order' });
   }
 });
