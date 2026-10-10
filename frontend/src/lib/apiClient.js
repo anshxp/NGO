@@ -6,7 +6,7 @@ const normalizeBaseURL = (value) => {
   return /\/api$/i.test(configured) ? configured : `${configured}/api`;
 };
 
-const baseURL = normalizeBaseURL(import.meta.env.VITE_API_URL);
+const baseURL = import.meta.env.DEV ? '/api' : normalizeBaseURL(import.meta.env.VITE_API_URL);
 const api = axios.create({
   baseURL,
   withCredentials: true,
