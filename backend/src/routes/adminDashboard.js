@@ -70,6 +70,28 @@ router.put('/beneficiaries/:id', async (req, res) => {
 });
 
 router.get('/messages', async (_req, res) => res.json(await MessageModel.find().sort({ sentDate: -1 }).limit(200).lean()));
+router.post('/messages', async (req, res) => {
+  const title = safeText(req.body?.title, 200);
+  const content = safeText(req.body?.content, 10000);
+  const sendToAll = req.body?.sendToAll === true || req.body?.sendToAll === 'true';
+  const recipientInput = safeText(req.body?.recipientId, 254);
+  if (!title || !content) return res.status(400).json({ error: 'Title and content are required' });
+  let recipient = null;
+  if (!sendToAll) {
+    if (!recipientInput) return res.status(400).json({ error: 'Select a recipient or enable send to all' });
+    recipient = validId(recipientInput)
+      ? await UserModel.findById(recipientInput).select('_id').lean()
+      : await UserModel.findOne({ email: recipientInput.toLowerCase() }).select('_id').lean();
+    if (!recipient) return res.status(400).json({ error: 'Recipient not found. Enter a valid member email or ID.' });
+  }
+  const item = await MessageModel.create({
+    messageId: `MSG-${Date.now()}-${crypto.randomBytes(3).toString('hex')}`,
+    senderId: req.userId, recipientId: recipient?._id, sendToAll, title, content,
+    imageUrl: safeText(req.body?.imageUrl, 1000) || undefined,
+    sentDate: new Date(), readBy: [], status: 'sent'
+  });
+  return res.status(201).json({ success: true, message: 'Message sent', id: item._id });
+});
 router.get('/messages/:id', async (req, res) => {
   if (!validId(req.params.id)) return res.status(400).json({ error: 'Invalid identifier' });
   const item = await MessageModel.findById(req.params.id).lean();
